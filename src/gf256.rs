@@ -4,7 +4,7 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 
 const IRREDUCIBLE_POLYNOMIAL: u16 = 0x11B;
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy, Debug)]
 pub struct Gf256 {
     val: u8,
 }
@@ -126,6 +126,12 @@ impl Div for Gf256 {
             Some(rhs_inv) => Some(self * rhs_inv),
             None => None,
         }
+    }
+}
+
+impl PartialEq for Gf256 {
+    fn eq(&self, other: &Self) -> bool {
+        self.val == other.val
     }
 }
 
