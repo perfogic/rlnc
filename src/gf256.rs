@@ -112,23 +112,17 @@ impl Mul for Gf256 {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        let mul_res_16b = (0..u8::BITS).fold(0u16, |acc, bit_idx| {
-            let selected_bit = (rhs.val >> bit_idx) & 1;
-            let bit_mask = (selected_bit as u16).wrapping_neg();
+        if self == Self::zero() || rhs == Self::zero() {
+            return Self::zero();
+        }
 
-            acc ^ ((self.val as u16) << bit_idx) & bit_mask
-        });
+        let l = self.val as usize;
+        let r = rhs.val as usize;
+        let lr = l.wrapping_add(r);
 
-        let reduced = (u8::BITS..u16::BITS)
-            .rev()
-            .fold(mul_res_16b, |acc, bit_idx| {
-                let selected_bit = (acc >> bit_idx) & 1;
-                let bit_mask = (selected_bit as u16).wrapping_neg();
-
-                acc ^ (IRREDUCIBLE_POLYNOMIAL << (bit_idx - u8::BITS)) & bit_mask
-            });
-
-        Gf256 { val: reduced as u8 }
+        Gf256 {
+            val: GF256_EXP_TABLE[lr as usize],
+        }
     }
 }
 
