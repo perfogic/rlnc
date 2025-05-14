@@ -148,3 +148,38 @@ impl Distribution<Gf256> for StandardUniform {
         Gf256 { val: rng.random() }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::gf256::Gf256;
+    use rand::Rng;
+
+    #[test]
+    fn prop_test_gf256_operations() {
+        const NUM_TEST_ITERATIONS: usize = 100_000;
+
+        let mut rng = rand::rng();
+
+        (0..NUM_TEST_ITERATIONS).for_each(|_| {
+            let a: Gf256 = rng.random();
+            let b: Gf256 = rng.random();
+
+            // Addition, Subtraction, Negation
+            let sum = a + b;
+            let diff = sum - b;
+
+            assert_eq!(diff, a);
+
+            // Multiplication, Division, Inversion
+            let mul = a * b;
+            let div = mul / b;
+
+            if b == Gf256::zero() {
+                assert_eq!(div, None);
+                assert_eq!(mul, Gf256::zero());
+            } else {
+                assert_eq!(a, div.unwrap());
+            }
+        });
+    }
+}
