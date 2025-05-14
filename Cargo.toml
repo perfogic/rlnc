@@ -6,4 +6,4 @@ description = "Random Linear Network Coding"
 license = "MPL-2.0"
 
 [dependencies]
-rand = "0.9.1"
+rand = "=0.9.1"
