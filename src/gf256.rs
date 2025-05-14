@@ -2,6 +2,9 @@ use rand::Rng;
 use rand::distr::{Distribution, StandardUniform};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
+/// Following GF(2**8) logarithm and exponentiation tables are generated using
+/// Python script @ https://gist.github.com/itzmeanjan/0b2ec3f378de2c2e911bd4bb5505d45a.
+
 const GF256_ORDER: usize = u8::MAX as usize + 1;
 
 const GF256_LOG_TABLE: [u8; GF256_ORDER] = [
@@ -71,11 +74,8 @@ impl Gf256 {
             return None;
         }
 
-        let log_val = GF256_LOG_TABLE[self.val as usize];
-        let log_inv = (GF256_ORDER - 1) - log_val as usize;
-
         Some(Gf256 {
-            val: GF256_EXP_TABLE[log_inv],
+            val: GF256_EXP_TABLE[(GF256_ORDER - 1) - GF256_LOG_TABLE[self.val as usize] as usize],
         })
     }
 }
@@ -116,12 +116,11 @@ impl Mul for Gf256 {
             return Self::zero();
         }
 
-        let l = self.val as usize;
-        let r = rhs.val as usize;
-        let lr = l.wrapping_add(r);
+        let l = GF256_LOG_TABLE[self.val as usize] as usize;
+        let r = GF256_LOG_TABLE[rhs.val as usize] as usize;
 
         Gf256 {
-            val: GF256_EXP_TABLE[lr as usize],
+            val: GF256_EXP_TABLE[l + r],
         }
     }
 }
