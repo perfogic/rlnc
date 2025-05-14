@@ -58,55 +58,25 @@ impl Gf256 {
         Gf256 { val }
     }
 
-    fn gf_degree(a: u16) -> i32 {
-        let branch = [(u16::BITS - a.leading_zeros()) as i32, -1i32];
-        branch[(a == 0) as usize]
+    pub fn zero() -> Self {
+        Gf256::default()
+    }
+
+    pub fn one() -> Self {
+        Gf256 { val: 1 }
     }
 
     pub fn inv(self) -> Option<Self> {
-        if self.val == 0 {
+        if self == Self::zero() {
             return None;
         }
 
-        let mut r0 = IRREDUCIBLE_POLYNOMIAL;
-        let mut r1 = self.val as u16;
-        let mut s0 = 0;
-        let mut s1 = 1;
+        let log_val = GF256_LOG_TABLE[self.val as usize];
+        let log_inv = (GF256_ORDER - 1) - log_val as usize;
 
-        (0..u16::BITS).for_each(|_| {
-            let r1_nonzero = if r1 != 0 { 1 } else { 0 };
-            let r1_mask = (r1_nonzero as u32).wrapping_neg();
-
-            let deg0 = Self::gf_degree(r0);
-            let deg1 = Self::gf_degree(r1);
-
-            let shift = deg0 - deg1;
-            let cond = if deg0 >= deg1 && r1_nonzero != 0 {
-                1
-            } else {
-                0
-            };
-            let cond_mask = (cond as u32).wrapping_neg();
-
-            let q_times_r1 = (r1 << shift) & cond_mask as u16;
-            let q_times_s1 = (s1 << shift) & cond_mask;
-
-            let new_r0 = r1;
-            let new_r1 = r0 ^ q_times_r1;
-            let new_s0 = s1;
-            let new_s1 = s0 ^ q_times_s1;
-
-            r0 = (r1_mask as u16 & new_r0) | (!(r1_mask as u16) & r0);
-            r1 = (r1_mask as u16 & new_r1) | (!(r1_mask as u16) & r1);
-            s0 = (r1_mask & new_s0) | (!r1_mask & s0);
-            s1 = (r1_mask & new_s1) | (!r1_mask & s1);
-        });
-
-        if r0 != 1 {
-            None
-        } else {
-            Some(Gf256 { val: s0 as u8 })
-        }
+        Some(Gf256 {
+            val: GF256_EXP_TABLE[log_inv],
+        })
     }
 }
 
