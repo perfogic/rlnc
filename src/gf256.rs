@@ -1,6 +1,6 @@
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform};
-use std::ops::{Add, Mul, Neg, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 const IRREDUCIBLE_POLYNOMIAL: u16 = 0x11B;
 
@@ -115,6 +115,17 @@ impl Mul for Gf256 {
             });
 
         Gf256 { val: reduced as u8 }
+    }
+}
+
+impl Div for Gf256 {
+    type Output = Option<Self>;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        match rhs.inv() {
+            Some(rhs_inv) => Some(self * rhs_inv),
+            None => None,
+        }
     }
 }
 
