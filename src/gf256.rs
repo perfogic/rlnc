@@ -61,6 +61,10 @@ impl Gf256 {
         Gf256 { val }
     }
 
+    pub fn get(&self) -> u8 {
+        self.val
+    }
+
     pub fn zero() -> Self {
         Gf256::default()
     }
