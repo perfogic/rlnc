@@ -25,6 +25,10 @@ impl Decoder {
     }
 
     pub fn decode(&mut self, full_coded_piece: &[u8]) -> Result<(), RLNCError> {
+        if self.is_already_decoded() {
+            return Err(RLNCError::ReceivedAllPieces);
+        }
+
         let rank_before = self.rank();
 
         self.data.extend_from_slice(full_coded_piece);
@@ -39,6 +43,10 @@ impl Decoder {
         }
 
         Ok(())
+    }
+
+    pub fn is_already_decoded(&self) -> bool {
+        self.rank() == self.required_piece_count
     }
 
     fn get(&self, index: (usize, usize)) -> Gf256 {
