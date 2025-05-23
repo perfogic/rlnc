@@ -1,4 +1,4 @@
-use crate::gf256::Gf256;
+use crate::{errors::RLNCError, gf256::Gf256};
 
 #[derive(Clone)]
 pub struct Decoder {
@@ -22,6 +22,23 @@ impl Decoder {
             received_piece_count: 0,
             useful_piece_count: 0,
         }
+    }
+
+    pub fn decode(&mut self, full_coded_piece: &[u8]) -> Result<(), RLNCError> {
+        let rank_before = self.rank();
+
+        self.data.extend_from_slice(full_coded_piece);
+        self.received_piece_count += 1;
+        self.useful_piece_count += 1;
+        self.rref();
+
+        let rank_after = self.rank();
+
+        if rank_before == rank_after {
+            return Err(RLNCError::PieceNotUseful);
+        }
+
+        Ok(())
     }
 
     fn get(&self, index: (usize, usize)) -> Gf256 {
@@ -151,6 +168,8 @@ impl Decoder {
             rows -= 1;
         }
 
+        self.useful_piece_count = rows;
+
         let total_byte_len = rows * cols;
         self.data.truncate(total_byte_len);
     }
@@ -159,5 +178,9 @@ impl Decoder {
         self.clean_forward();
         self.clean_backward();
         self.remove_zero_rows();
+    }
+
+    fn rank(&self) -> usize {
+        self.useful_piece_count
     }
 }
