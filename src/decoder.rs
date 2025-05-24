@@ -1,4 +1,4 @@
-use crate::{errors::RLNCError, gf256::Gf256};
+use crate::{encoder::BOUNDARY_MARKER, errors::RLNCError, gf256::Gf256};
 
 #[derive(Clone)]
 pub struct Decoder {
@@ -47,6 +47,30 @@ impl Decoder {
 
     pub fn is_already_decoded(&self) -> bool {
         self.rank() == self.required_piece_count
+    }
+
+    pub fn get_decoded_data(self) -> Result<Vec<u8>, RLNCError> {
+        if !self.is_already_decoded() {
+            return Err(RLNCError::NotAllPiecesReceivedYet);
+        }
+
+        let mut decoded_data = Vec::with_capacity(self.piece_byte_len * self.required_piece_count);
+
+        self.data
+            .chunks_exact(self.required_piece_count)
+            .for_each(|full_decoded_piece| {
+                let decoded_piece = &full_decoded_piece[self.required_piece_count..];
+                decoded_data.extend_from_slice(decoded_piece);
+            });
+
+        let boundary_marker = decoded_data
+            .iter()
+            .rev()
+            .position(|&byte| byte == BOUNDARY_MARKER)
+            .unwrap_or(0);
+        decoded_data.truncate(boundary_marker);
+
+        Ok(decoded_data)
     }
 
     fn get(&self, index: (usize, usize)) -> Gf256 {
