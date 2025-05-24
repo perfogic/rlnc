@@ -10,6 +10,18 @@ pub struct Encoder {
 }
 
 impl Encoder {
+    pub fn without_padding(data: Vec<u8>, piece_count: usize) -> Result<(Encoder, usize), RLNCError> {
+        let in_data_len = data.len();
+        let piece_byte_len = in_data_len / piece_count;
+        let computed_total_data_len = piece_byte_len * piece_count;
+
+        if computed_total_data_len != in_data_len {
+            return Err(RLNCError::DataLengthMismatch);
+        }
+
+        Ok((Encoder { data, piece_count }, piece_byte_len))
+    }
+
     pub fn new(mut data: Vec<u8>, piece_count: usize) -> (Encoder, usize) {
         let in_data_len = data.len();
         let boundary_marker_len = 1;

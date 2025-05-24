@@ -6,6 +6,7 @@ pub enum RLNCError {
     NotEnoughPiecesToRecode,
     CodingVectorLengthMismatch,
     InvalidDecodedDataFormat,
+    DataLengthMismatch,
 }
 
 impl std::fmt::Display for RLNCError {
@@ -17,6 +18,7 @@ impl std::fmt::Display for RLNCError {
             RLNCError::NotEnoughPiecesToRecode => write!(f, "Not enough pieces received to recode"),
             RLNCError::CodingVectorLengthMismatch => write!(f, "Coding vector length mismatch"),
             RLNCError::InvalidDecodedDataFormat => write!(f, "Invalid decoded data format"),
+            RLNCError::DataLengthMismatch => write!(f, "Data length mismatch"),
         }
     }
 }
