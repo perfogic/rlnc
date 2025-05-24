@@ -1,7 +1,4 @@
-mod gf256;
-mod tests;
+mod common;
 
-pub mod decoder;
-pub mod encoder;
-pub mod errors;
-pub mod recoder;
+pub mod full;
+pub use crate::common::errors::RLNCError;

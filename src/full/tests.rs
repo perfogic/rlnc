@@ -1,6 +1,7 @@
 #![cfg(test)]
 
-use crate::{decoder::Decoder, encoder::Encoder, errors::RLNCError, recoder::Recoder};
+use super::{decoder::Decoder, encoder::Encoder, recoder::Recoder};
+use crate::RLNCError;
 use rand::Rng;
 
 #[test]

@@ -1,4 +1,5 @@
-use crate::{encoder::BOUNDARY_MARKER, errors::RLNCError, gf256::Gf256};
+use super::consts::BOUNDARY_MARKER;
+use crate::{RLNCError, common::gf256::Gf256};
 
 #[derive(Clone)]
 pub struct Decoder {

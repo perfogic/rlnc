@@ -140,7 +140,7 @@ impl Distribution<Gf256> for StandardUniform {
 
 #[cfg(test)]
 mod test {
-    use crate::gf256::Gf256;
+    use super::Gf256;
     use rand::Rng;
 
     #[test]

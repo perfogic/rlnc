@@ -1,16 +1,15 @@
-use crate::{errors::RLNCError, gf256::Gf256};
+use super::consts::BOUNDARY_MARKER;
+use crate::{RLNCError, common::gf256::Gf256};
 use rand::Rng;
 
-pub const BOUNDARY_MARKER: u8 = 0x81;
-
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Encoder {
     data: Vec<u8>,
     piece_count: usize,
 }
 
 impl Encoder {
-    pub fn without_padding(data: Vec<u8>, piece_count: usize) -> Result<(Encoder, usize), RLNCError> {
+    pub(crate) fn without_padding(data: Vec<u8>, piece_count: usize) -> Result<(Encoder, usize), RLNCError> {
         let in_data_len = data.len();
         let piece_byte_len = in_data_len / piece_count;
         let computed_total_data_len = piece_byte_len * piece_count;

@@ -1,4 +1,5 @@
-use crate::{encoder::Encoder, errors::RLNCError, gf256::Gf256};
+use super::encoder::Encoder;
+use crate::{RLNCError, common::gf256::Gf256};
 use rand::Rng;
 
 #[derive(Clone)]
