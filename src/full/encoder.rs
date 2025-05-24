@@ -24,7 +24,7 @@ impl Encoder {
     pub fn new(mut data: Vec<u8>, piece_count: usize) -> (Encoder, usize) {
         let in_data_len = data.len();
         let boundary_marker_len = 1;
-        let piece_byte_len = (in_data_len + boundary_marker_len + (piece_count - 1)) / piece_count;
+        let piece_byte_len = (in_data_len + boundary_marker_len).div_ceil(piece_count);
         let padded_data_len = piece_count * piece_byte_len;
 
         data.resize(padded_data_len, 0);

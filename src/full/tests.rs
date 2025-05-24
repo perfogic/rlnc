@@ -39,7 +39,7 @@ fn prop_test_rlnc_encoder_decoder() {
             };
         }
 
-        assert_eq!(decoder.is_already_decoded(), true);
+        assert!(decoder.is_already_decoded());
         let decoded_data = decoder.get_decoded_data().expect("Extracting decoded data must not fail!");
 
         assert_eq!(data_copy, decoded_data);
@@ -78,8 +78,7 @@ fn prop_test_rlnc_encoder_recoder_decoder() {
             let num_pieces_to_recode = rng.random_range(MIN_NUM_PIECES_TO_RECODE..=MAX_NUM_PIECES_TO_RECODE);
 
             let coded_pieces = (0..num_pieces_to_recode)
-                .map(|_| encoder.code(&mut rng).expect("Generating new RLNC coded piece must not fail!"))
-                .flatten()
+                .flat_map(|_| encoder.code(&mut rng).expect("Generating new RLNC coded piece must not fail!"))
                 .collect::<Vec<u8>>();
 
             let recoder = Recoder::new(coded_pieces, piece_byte_len, piece_count).expect("Construction of RLNC recoder must not fail!");
@@ -113,7 +112,7 @@ fn prop_test_rlnc_encoder_recoder_decoder() {
             };
         }
 
-        assert_eq!(decoder.is_already_decoded(), true);
+        assert!(decoder.is_already_decoded());
         let decoded_data = decoder.get_decoded_data().expect("Extracting decoded data must not fail!");
 
         assert_eq!(data_copy, decoded_data);

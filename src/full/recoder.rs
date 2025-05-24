@@ -43,20 +43,19 @@ impl Recoder {
 
     pub fn recode<R: Rng + ?Sized>(&self, rng: &mut R) -> Result<Vec<u8>, RLNCError> {
         let random_coding_vector = (0..self.num_pieces_received).map(|_| rng.random()).collect::<Vec<Gf256>>();
-
-        let lhs_vec_cols = random_coding_vector.len();
         let rhs_mat_cols = self.num_pieces_coded_together;
 
         let mut computed_coding_vector = vec![0u8; rhs_mat_cols];
         computed_coding_vector.reserve(self.piece_byte_len);
 
-        for j in 0..rhs_mat_cols {
-            let mut res_symbol = Gf256::default();
-            for k in 0..lhs_vec_cols {
-                res_symbol += random_coding_vector[k] * self.coding_vectors[k * rhs_mat_cols + j];
+        for (j, res_symbol) in computed_coding_vector.iter_mut().enumerate() {
+            let mut local_res = Gf256::default();
+
+            for (k, &random_symbol) in random_coding_vector.iter().enumerate() {
+                local_res += random_symbol * self.coding_vectors[k * rhs_mat_cols + j];
             }
 
-            computed_coding_vector[j] = res_symbol.get();
+            *res_symbol = local_res.get();
         }
 
         let full_coded_piece = self.encoder.code_with_coding_vector(&random_coding_vector)?;

@@ -191,8 +191,7 @@ impl Decoder {
 
         let mut i = 0;
         while i < rows {
-            let is_nonzero_row = (0..coeff_cols).fold(false, |is_nonzero, cidx| is_nonzero || (self.get((i, cidx)) != Gf256::zero()));
-
+            let is_nonzero_row = (0..coeff_cols).any(|cidx| (self.get((i, cidx)) != Gf256::zero()));
             if is_nonzero_row {
                 i += 1;
                 continue;

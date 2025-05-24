@@ -1,9 +1,9 @@
+//! Following GF(2**8) logarithm and exponentiation tables are generated using
+//! Python script @ https://gist.github.com/itzmeanjan/0b2ec3f378de2c2e911bd4bb5505d45a.
+
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform};
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
-
-/// Following GF(2**8) logarithm and exponentiation tables are generated using
-/// Python script @ https://gist.github.com/itzmeanjan/0b2ec3f378de2c2e911bd4bb5505d45a.
 
 const GF256_ORDER: usize = u8::MAX as usize + 1;
 
@@ -73,12 +73,14 @@ impl Gf256 {
 impl Add for Gf256 {
     type Output = Self;
 
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn add(self, rhs: Self) -> Self::Output {
         Gf256 { val: self.val ^ rhs.val }
     }
 }
 
 impl AddAssign for Gf256 {
+    #[allow(clippy::suspicious_op_assign_impl)]
     fn add_assign(&mut self, rhs: Self) {
         self.val ^= rhs.val;
     }
@@ -95,6 +97,7 @@ impl Neg for Gf256 {
 impl Sub for Gf256 {
     type Output = Self;
 
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn sub(self, rhs: Self) -> Self::Output {
         Gf256 { val: self.val ^ rhs.val }
     }
@@ -118,11 +121,9 @@ impl Mul for Gf256 {
 impl Div for Gf256 {
     type Output = Option<Self>;
 
+    #[allow(clippy::suspicious_arithmetic_impl)]
     fn div(self, rhs: Self) -> Self::Output {
-        match rhs.inv() {
-            Some(rhs_inv) => Some(self * rhs_inv),
-            None => None,
-        }
+        rhs.inv().map(|rhs_inv| self * rhs_inv)
     }
 }
 
