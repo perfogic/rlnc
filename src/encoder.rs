@@ -1,4 +1,4 @@
-use crate::gf256::Gf256;
+use crate::{errors::RLNCError, gf256::Gf256};
 use rand::Rng;
 
 pub const BOUNDARY_MARKER: u8 = 0x81;
@@ -24,7 +24,11 @@ impl Encoder {
         Encoder { data, piece_count }
     }
 
-    pub fn code_with_coding_vector(&self, coding_vector: &[Gf256]) -> Vec<u8> {
+    pub fn code_with_coding_vector(&self, coding_vector: &[Gf256]) -> Result<Vec<u8>, RLNCError> {
+        if coding_vector.len() != self.piece_count {
+            return Err(RLNCError::CodingVectorLengthMismatch);
+        }
+
         let piece_byte_len = self.data.len() / self.piece_count;
 
         let coded_piece = self
@@ -58,10 +62,10 @@ impl Encoder {
             });
         full_coded_piece[self.piece_count..].copy_from_slice(&coded_piece);
 
-        full_coded_piece
+        Ok(full_coded_piece)
     }
 
-    pub fn code<R: Rng + ?Sized>(&self, rng: &mut R) -> Vec<u8> {
+    pub fn code<R: Rng + ?Sized>(&self, rng: &mut R) -> Result<Vec<u8>, RLNCError> {
         let random_coding_vector = (0..self.piece_count)
             .map(|_| rng.random())
             .collect::<Vec<Gf256>>();
