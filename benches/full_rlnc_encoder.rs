@@ -1,4 +1,3 @@
-use divan;
 use rand::Rng;
 use rlnc::full::encoder::Encoder;
 use std::{fmt::Debug, time::Duration};
@@ -70,6 +69,6 @@ fn encode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
 
     bencher
         .counter(divan::counter::BytesCount::new(rlnc_config.data_byte_len))
-        .with_inputs(|| rand::rng())
+        .with_inputs(rand::rng)
         .bench_refs(|mut rng| divan::black_box(&encoder).code(divan::black_box(&mut rng)));
 }
