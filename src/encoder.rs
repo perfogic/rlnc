@@ -33,12 +33,7 @@ impl Encoder {
             .data
             .chunks_exact(piece_byte_len)
             .zip(coding_vector)
-            .map(|(piece, &random_symbol)| {
-                piece
-                    .iter()
-                    .map(|&symbol| Gf256::new(symbol) * random_symbol)
-                    .collect::<Vec<Gf256>>()
-            })
+            .map(|(piece, &random_symbol)| piece.iter().map(|&symbol| Gf256::new(symbol) * random_symbol).collect::<Vec<Gf256>>())
             .fold(vec![Gf256::default(); piece_byte_len], |mut acc, cur| {
                 acc.iter_mut().zip(cur).for_each(|(a, b)| {
                     *a += b;
@@ -52,21 +47,16 @@ impl Encoder {
 
         let mut full_coded_piece = vec![0u8; self.piece_count + piece_byte_len];
 
-        full_coded_piece[..self.piece_count]
-            .iter_mut()
-            .enumerate()
-            .for_each(|(idx, symbol)| {
-                *symbol = coding_vector[idx].get();
-            });
+        full_coded_piece[..self.piece_count].iter_mut().enumerate().for_each(|(idx, symbol)| {
+            *symbol = coding_vector[idx].get();
+        });
         full_coded_piece[self.piece_count..].copy_from_slice(&coded_piece);
 
         Ok(full_coded_piece)
     }
 
     pub fn code<R: Rng + ?Sized>(&self, rng: &mut R) -> Result<Vec<u8>, RLNCError> {
-        let random_coding_vector = (0..self.piece_count)
-            .map(|_| rng.random())
-            .collect::<Vec<Gf256>>();
+        let random_coding_vector = (0..self.piece_count).map(|_| rng.random()).collect::<Vec<Gf256>>();
 
         self.code_with_coding_vector(&random_coding_vector)
     }

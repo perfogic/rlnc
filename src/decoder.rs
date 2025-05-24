@@ -57,12 +57,10 @@ impl Decoder {
         let full_coded_piece_len = self.required_piece_count + self.piece_byte_len;
         let mut decoded_data = Vec::with_capacity(self.piece_byte_len * self.required_piece_count);
 
-        self.data
-            .chunks_exact(full_coded_piece_len)
-            .for_each(|full_decoded_piece| {
-                let decoded_piece = &full_decoded_piece[self.required_piece_count..];
-                decoded_data.extend_from_slice(decoded_piece);
-            });
+        self.data.chunks_exact(full_coded_piece_len).for_each(|full_decoded_piece| {
+            let decoded_piece = &full_decoded_piece[self.required_piece_count..];
+            decoded_data.extend_from_slice(decoded_piece);
+        });
 
         let last_index_of_decoded_data = decoded_data.len() - 1;
         let boundary_marker_rev_index = decoded_data
@@ -75,10 +73,7 @@ impl Decoder {
         if boundary_marker_index == 0 {
             return Err(RLNCError::InvalidDecodedDataFormat);
         }
-        if decoded_data[(boundary_marker_index + 1)..]
-            .iter()
-            .any(|&byte| byte != 0)
-        {
+        if decoded_data[(boundary_marker_index + 1)..].iter().any(|&byte| byte != 0) {
             return Err(RLNCError::InvalidDecodedDataFormat);
         }
 
@@ -195,9 +190,7 @@ impl Decoder {
 
         let mut i = 0;
         while i < rows {
-            let is_nonzero_row = (0..coeff_cols).fold(false, |is_nonzero, cidx| {
-                is_nonzero || (self.get((i, cidx)) != Gf256::zero())
-            });
+            let is_nonzero_row = (0..coeff_cols).fold(false, |is_nonzero, cidx| is_nonzero || (self.get((i, cidx)) != Gf256::zero()));
 
             if is_nonzero_row {
                 i += 1;
@@ -209,10 +202,8 @@ impl Decoder {
             let end_index_of_useful_data = self.useful_piece_count * cols;
 
             if start_index_of_next_row < end_index_of_useful_data {
-                self.data.copy_within(
-                    start_index_of_next_row..end_index_of_useful_data,
-                    start_index_of_row_to_remove,
-                );
+                self.data
+                    .copy_within(start_index_of_next_row..end_index_of_useful_data, start_index_of_row_to_remove);
             }
 
             rows -= 1;

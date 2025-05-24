@@ -11,11 +11,7 @@ pub struct Recoder {
 }
 
 impl Recoder {
-    pub fn new(
-        data: Vec<u8>,
-        piece_byte_len: usize,
-        num_pieces_coded_together: usize,
-    ) -> Result<Recoder, RLNCError> {
+    pub fn new(data: Vec<u8>, piece_byte_len: usize, num_pieces_coded_together: usize) -> Result<Recoder, RLNCError> {
         let full_coded_piece_len = num_pieces_coded_together + piece_byte_len;
         let num_pieces_received = data.len() / full_coded_piece_len;
 
@@ -23,18 +19,16 @@ impl Recoder {
             return Err(RLNCError::NotEnoughPiecesToRecode);
         }
 
-        let mut coding_vectors =
-            Vec::with_capacity(num_pieces_received * num_pieces_coded_together);
+        let mut coding_vectors = Vec::with_capacity(num_pieces_received * num_pieces_coded_together);
         let mut coded_pieces = Vec::with_capacity(num_pieces_received * piece_byte_len);
 
-        data.chunks_exact(full_coded_piece_len)
-            .for_each(|full_coded_piece| {
-                let coding_vector = &full_coded_piece[..num_pieces_coded_together];
-                let coded_piece = &full_coded_piece[num_pieces_coded_together..];
+        data.chunks_exact(full_coded_piece_len).for_each(|full_coded_piece| {
+            let coding_vector = &full_coded_piece[..num_pieces_coded_together];
+            let coded_piece = &full_coded_piece[num_pieces_coded_together..];
 
-                coding_vectors.extend(coding_vector.iter().map(|&symbol| Gf256::new(symbol)));
-                coded_pieces.extend_from_slice(coded_piece);
-            });
+            coding_vectors.extend(coding_vector.iter().map(|&symbol| Gf256::new(symbol)));
+            coded_pieces.extend_from_slice(coded_piece);
+        });
 
         let (encoder, _) = Encoder::new(coded_pieces, num_pieces_received);
         Ok(Recoder {
@@ -47,9 +41,7 @@ impl Recoder {
     }
 
     pub fn recode<R: Rng + ?Sized>(&self, rng: &mut R) -> Result<Vec<u8>, RLNCError> {
-        let random_coding_vector = (0..self.num_pieces_received)
-            .map(|_| rng.random())
-            .collect::<Vec<Gf256>>();
+        let random_coding_vector = (0..self.num_pieces_received).map(|_| rng.random()).collect::<Vec<Gf256>>();
 
         let lhs_vec_cols = random_coding_vector.len();
         let rhs_mat_cols = self.num_pieces_coded_together;
@@ -66,9 +58,7 @@ impl Recoder {
             computed_coding_vector[j] = res_symbol.get();
         }
 
-        let full_coded_piece = self
-            .encoder
-            .code_with_coding_vector(&random_coding_vector)?;
+        let full_coded_piece = self.encoder.code_with_coding_vector(&random_coding_vector)?;
         computed_coding_vector.extend_from_slice(&full_coded_piece[self.num_pieces_received..]);
 
         Ok(full_coded_piece)
