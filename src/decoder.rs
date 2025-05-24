@@ -63,13 +63,25 @@ impl Decoder {
                 decoded_data.extend_from_slice(decoded_piece);
             });
 
-        let boundary_marker = decoded_data
+        let last_index_of_decoded_data = decoded_data.len() - 1;
+        let boundary_marker_rev_index = decoded_data
             .iter()
             .rev()
             .position(|&byte| byte == BOUNDARY_MARKER)
-            .unwrap_or(0);
-        decoded_data.truncate(boundary_marker);
+            .unwrap_or(last_index_of_decoded_data);
+        let boundary_marker_index = last_index_of_decoded_data - boundary_marker_rev_index;
 
+        if boundary_marker_index == 0 {
+            return Err(RLNCError::InvalidDecodedDataFormat);
+        }
+        if decoded_data[(boundary_marker_index + 1)..]
+            .iter()
+            .any(|&byte| byte != 0)
+        {
+            return Err(RLNCError::InvalidDecodedDataFormat);
+        }
+
+        decoded_data.truncate(boundary_marker_index);
         Ok(decoded_data)
     }
 
