@@ -1,6 +1,6 @@
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform};
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
 /// Following GF(2**8) logarithm and exponentiation tables are generated using
 /// Python script @ https://gist.github.com/itzmeanjan/0b2ec3f378de2c2e911bd4bb5505d45a.
@@ -91,6 +91,12 @@ impl Add for Gf256 {
         Gf256 {
             val: self.val ^ rhs.val,
         }
+    }
+}
+
+impl AddAssign for Gf256 {
+    fn add_assign(&mut self, rhs: Self) {
+        self.val ^= rhs.val;
     }
 }
 

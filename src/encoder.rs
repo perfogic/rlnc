@@ -43,7 +43,7 @@ impl Encoder {
             })
             .fold(vec![Gf256::default(); piece_byte_len], |mut acc, cur| {
                 acc.iter_mut().zip(cur).for_each(|(a, b)| {
-                    *a = *a + b;
+                    *a += b;
                 });
 
                 acc
