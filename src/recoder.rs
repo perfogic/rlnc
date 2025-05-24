@@ -30,7 +30,7 @@ impl Recoder {
             coded_pieces.extend_from_slice(coded_piece);
         });
 
-        let (encoder, _) = Encoder::new(coded_pieces, num_pieces_received);
+        let (encoder, _) = Encoder::without_padding(coded_pieces, num_pieces_received)?;
         Ok(Recoder {
             coding_vectors,
             encoder,
@@ -59,8 +59,9 @@ impl Recoder {
         }
 
         let full_coded_piece = self.encoder.code_with_coding_vector(&random_coding_vector)?;
-        computed_coding_vector.extend_from_slice(&full_coded_piece[self.num_pieces_received..]);
+        let coded_piece = &full_coded_piece[self.num_pieces_received..];
 
-        Ok(full_coded_piece)
+        computed_coding_vector.extend_from_slice(coded_piece);
+        Ok(computed_coding_vector)
     }
 }
