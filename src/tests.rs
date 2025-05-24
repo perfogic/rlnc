@@ -4,7 +4,7 @@ use crate::{decoder::Decoder, encoder::Encoder, errors::RLNCError};
 use rand::Rng;
 
 #[test]
-fn test_rlnc_encoder_decoder_execution_tests() {
+fn prop_test_rlnc_encoder_decoder() {
     const NUM_TEST_ITERATIONS: usize = 10;
 
     const MIN_DATA_BYTE_LEN: usize = 1usize << 10;
