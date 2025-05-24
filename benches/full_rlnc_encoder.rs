@@ -1,8 +1,10 @@
 use divan;
 use rand::Rng;
 use rlnc::full::encoder::Encoder;
-use std::fmt::Debug;
-use std::time::Duration;
+use std::{fmt::Debug, time::Duration};
+
+#[global_allocator]
+static ALLOC: divan::AllocProfiler = divan::AllocProfiler::system();
 
 fn main() {
     divan::Divan::default().bytes_format(divan::counter::BytesFormat::Binary).main();
@@ -62,12 +64,12 @@ const ARGS: &[RLNCConfig] = &[
 #[divan::bench(args = ARGS, max_time = Duration::from_secs(300), skip_ext_time = true)]
 fn encode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
     let mut rng = rand::rng();
-
     let data = (0..rlnc_config.data_byte_len).map(|_| rng.random()).collect::<Vec<u8>>();
+
     let (encoder, _) = Encoder::new(data, rlnc_config.piece_count);
 
     bencher
         .counter(divan::counter::BytesCount::new(rlnc_config.data_byte_len))
         .with_inputs(|| rand::rng())
-        .bench_refs(|mut rng| encoder.code(divan::black_box(&mut rng)));
+        .bench_refs(|mut rng| divan::black_box(&encoder).code(divan::black_box(&mut rng)));
 }
