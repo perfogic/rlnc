@@ -54,10 +54,11 @@ impl Decoder {
             return Err(RLNCError::NotAllPiecesReceivedYet);
         }
 
+        let full_coded_piece_len = self.required_piece_count + self.piece_byte_len;
         let mut decoded_data = Vec::with_capacity(self.piece_byte_len * self.required_piece_count);
 
         self.data
-            .chunks_exact(self.required_piece_count)
+            .chunks_exact(full_coded_piece_len)
             .for_each(|full_decoded_piece| {
                 let decoded_piece = &full_decoded_piece[self.required_piece_count..];
                 decoded_data.extend_from_slice(decoded_piece);
