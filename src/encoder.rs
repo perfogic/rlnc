@@ -3,14 +3,14 @@ use rand::Rng;
 
 pub const BOUNDARY_MARKER: u8 = 0x81;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Encoder {
     data: Vec<u8>,
     piece_count: usize,
 }
 
 impl Encoder {
-    pub fn new(mut data: Vec<u8>, piece_count: usize) -> Encoder {
+    pub fn new(mut data: Vec<u8>, piece_count: usize) -> (Encoder, usize) {
         let in_data_len = data.len();
         let boundary_marker_len = 1;
         let piece_byte_len = (in_data_len + boundary_marker_len + (piece_count - 1)) / piece_count;
@@ -19,7 +19,7 @@ impl Encoder {
         data.resize(padded_data_len, 0);
         data[in_data_len] = BOUNDARY_MARKER;
 
-        Encoder { data, piece_count }
+        (Encoder { data, piece_count }, piece_byte_len)
     }
 
     pub fn code_with_coding_vector(&self, coding_vector: &[Gf256]) -> Result<Vec<u8>, RLNCError> {

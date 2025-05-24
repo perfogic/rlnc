@@ -36,7 +36,7 @@ impl Recoder {
                 coded_pieces.extend_from_slice(coded_piece);
             });
 
-        let encoder = Encoder::new(coded_pieces, num_pieces_received);
+        let (encoder, _) = Encoder::new(coded_pieces, num_pieces_received);
         Ok(Recoder {
             coding_vectors,
             encoder,
