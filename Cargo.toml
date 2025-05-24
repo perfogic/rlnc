@@ -9,6 +9,13 @@ resolver = "3"
 [dependencies]
 rand = "=0.9.1"
 
+[dev-dependencies]
+divan = "=0.1.21"
+
+[[bench]]
+name = "full_rlnc_encoder"
+harness = false
+
 [profile.optimized]
 inherits = "release"
 codegen-units = 1
