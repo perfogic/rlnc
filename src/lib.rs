@@ -1,4 +1,5 @@
 mod gf256;
+mod tests;
 
 pub mod decoder;
 pub mod encoder;
