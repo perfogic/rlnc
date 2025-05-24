@@ -87,22 +87,27 @@ impl Decoder {
 
     fn get(&self, index: (usize, usize)) -> Gf256 {
         let (r_index, c_index) = index;
-        Gf256::new(self.data[r_index * self.useful_piece_count + c_index])
+        let cols = self.required_piece_count + self.piece_byte_len;
+
+        Gf256::new(self.data[r_index * cols + c_index])
     }
 
     fn set(&mut self, index: (usize, usize), val: Gf256) {
         let (r_index, c_index) = index;
-        self.data[r_index * self.useful_piece_count + c_index] = val.get();
+        let cols = self.required_piece_count + self.piece_byte_len;
+
+        self.data[r_index * cols + c_index] = val.get();
     }
 
     fn swap_rows(&mut self, row1: usize, row2: usize) {
         let cols = self.required_piece_count + self.piece_byte_len;
 
-        for c in 0..cols {
-            let idx1 = row1 * cols + c;
-            let idx2 = row2 * cols + c;
-            self.data.swap(idx1, idx2);
-        }
+        let row1_begins_at = row1 * cols;
+        let row2_begins_at = row2 * cols;
+
+        (0..cols).for_each(|cidx| {
+            self.data.swap(row1_begins_at + cidx, row2_begins_at + cidx);
+        });
     }
 
     fn clean_forward(&mut self) {
