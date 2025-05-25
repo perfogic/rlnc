@@ -30,7 +30,7 @@ fn bytes_to_human_readable(bytes: usize) -> String {
 impl Debug for RLNCConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&format!(
-            "Data: {}, Piece Count: {}",
+            "{} data splitted into {} pieces",
             &bytes_to_human_readable(self.data_byte_len),
             self.piece_count
         ))
@@ -70,5 +70,5 @@ fn encode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
     bencher
         .counter(divan::counter::BytesCount::new(rlnc_config.piece_count + rlnc_config.data_byte_len))
         .with_inputs(rand::rng)
-        .bench_refs(|mut rng| divan::black_box(&encoder).code(divan::black_box(&mut rng)));
+        .bench_refs(|rng| divan::black_box(&encoder).code(divan::black_box(rng)));
 }
