@@ -17,6 +17,10 @@ name = "full_rlnc_encoder"
 harness = false
 
 [[bench]]
+name = "full_rlnc_recoder"
+harness = false
+
+[[bench]]
 name = "full_rlnc_decoder"
 harness = false
 
