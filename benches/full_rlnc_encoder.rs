@@ -68,7 +68,7 @@ fn encode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
     let (encoder, _) = Encoder::new(data, rlnc_config.piece_count);
 
     bencher
-        .counter(divan::counter::BytesCount::new(rlnc_config.data_byte_len))
+        .counter(divan::counter::BytesCount::new(rlnc_config.piece_count + rlnc_config.data_byte_len))
         .with_inputs(rand::rng)
         .bench_refs(|mut rng| divan::black_box(&encoder).code(divan::black_box(&mut rng)));
 }
