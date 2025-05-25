@@ -16,6 +16,10 @@ divan = "=0.1.21"
 name = "full_rlnc_encoder"
 harness = false
 
+[[bench]]
+name = "full_rlnc_decoder"
+harness = false
+
 [profile.optimized]
 inherits = "release"
 codegen-units = 1
