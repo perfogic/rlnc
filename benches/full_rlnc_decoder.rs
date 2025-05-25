@@ -46,20 +46,20 @@ const ARGS: &[RLNCConfig] = &[
         piece_count: 1usize << 5,
     },
     RLNCConfig {
-        data_byte_len: 1usize << 15,
-        piece_count: 1usize << 5,
+        data_byte_len: 1usize << 13,
+        piece_count: 1usize << 6,
     },
     RLNCConfig {
-        data_byte_len: 1usize << 20,
-        piece_count: 1usize << 10,
+        data_byte_len: 1usize << 16,
+        piece_count: 1usize << 7,
     },
     RLNCConfig {
-        data_byte_len: 1usize << 25,
-        piece_count: 1usize << 10,
+        data_byte_len: 1usize << 19,
+        piece_count: 1usize << 8,
     },
     RLNCConfig {
-        data_byte_len: 1usize << 30,
-        piece_count: 1usize << 15,
+        data_byte_len: 1usize << 22,
+        piece_count: 1usize << 9,
     },
 ];
 
@@ -73,6 +73,7 @@ fn decode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
     let num_pieces_to_produce = rlnc_config.piece_count * 2;
     let coded_pieces = (0..num_pieces_to_produce).flat_map(|_| encoder.code(&mut rng).unwrap()).collect::<Vec<u8>>();
 
+    // Should this bytescount be computed like this ?
     bencher
         .counter(divan::counter::BytesCount::new(rlnc_config.piece_count * rlnc_config.data_byte_len))
         .with_inputs(|| Decoder::new(piece_byte_len, rlnc_config.piece_count))
@@ -89,8 +90,7 @@ fn decode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
                     Ok(_) => {}
                     Err(e) => match e {
                         RLNCError::ReceivedAllPieces => break,
-                        RLNCError::PieceNotUseful => continue,
-                        _ => panic!("Did not expect this error during decoding: {}", e),
+                        _ => {}
                     },
                 };
 
