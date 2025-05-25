@@ -24,6 +24,10 @@ test: ## Run all tests
 test-wasm: ## Run all tests in WASM environment
 	$(BACKTRACE) cargo test --target wasm32-wasip1 --profile test-release
 
+.PHONY: bench
+bench: ## Run all benchmarks
+	cargo bench --profile optimized
+
 .PHONY: clean
 clean: ## Removes cargo target directory
 	cargo clean
