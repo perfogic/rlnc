@@ -34,7 +34,7 @@ fn prop_test_rlnc_encoder_decoder() {
                 Err(e) => match e {
                     RLNCError::ReceivedAllPieces => break,
                     RLNCError::PieceNotUseful => continue,
-                    _ => panic!("Did not expect this error during decoding: {}", e),
+                    _ => panic!("Did not expect this error during decoding: {e}"),
                 },
             };
         }
@@ -94,7 +94,7 @@ fn prop_test_rlnc_encoder_recoder_decoder() {
                     Err(e) => match e {
                         RLNCError::ReceivedAllPieces => break 'OUTER,
                         RLNCError::PieceNotUseful => {}
-                        _ => panic!("Did not expect this error during decoding: {}", e),
+                        _ => panic!("Did not expect this error during decoding: {e}"),
                     },
                 };
 
@@ -107,7 +107,7 @@ fn prop_test_rlnc_encoder_recoder_decoder() {
                 Err(e) => match e {
                     RLNCError::ReceivedAllPieces => break,
                     RLNCError::PieceNotUseful => continue,
-                    _ => panic!("Did not expect this error during decoding: {}", e),
+                    _ => panic!("Did not expect this error during decoding: {e}"),
                 },
             };
         }

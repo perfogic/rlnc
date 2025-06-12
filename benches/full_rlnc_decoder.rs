@@ -88,10 +88,11 @@ fn decode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
 
                 match divan::black_box(&mut decoder).decode(divan::black_box(coded_piece)) {
                     Ok(_) => {}
-                    Err(e) => match e {
-                        RLNCError::ReceivedAllPieces => break,
-                        _ => {}
-                    },
+                    Err(e) => {
+                        if let RLNCError::ReceivedAllPieces = e {
+                            break;
+                        }
+                    }
                 };
 
                 piece_index += 1;
