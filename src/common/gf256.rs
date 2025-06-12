@@ -37,28 +37,34 @@ const GF256_EXP_TABLE: [u8; 2 * GF256_ORDER - 2] = [
     108, 216, 173, 71, 142,
 ];
 
+/// Gf(2^8) wrapper type.
 #[derive(Default, Clone, Copy, Debug)]
 pub struct Gf256 {
     val: u8,
 }
 
 impl Gf256 {
+    /// Creates a new Gf256 element from a u8 value.
     pub fn new(val: u8) -> Self {
         Gf256 { val }
     }
 
+    /// Returns the raw u8 value of the Gf256 element.
     pub fn get(&self) -> u8 {
         self.val
     }
 
+    /// Returns the additive identity element (0).
     pub fn zero() -> Self {
         Gf256::default()
     }
 
+    /// Returns the multiplicative identity element (1).
     pub fn one() -> Self {
         Gf256 { val: 1 }
     }
 
+    /// Computes the multiplicative inverse of the element. Returns `None` for the zero element.
     pub fn inv(self) -> Option<Self> {
         if self == Self::zero() {
             return None;
@@ -73,6 +79,7 @@ impl Gf256 {
 impl Add for Gf256 {
     type Output = Self;
 
+    /// Performs addition (XOR) of two Gf256 elements.
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn add(self, rhs: Self) -> Self::Output {
         Gf256 { val: self.val ^ rhs.val }
@@ -80,6 +87,7 @@ impl Add for Gf256 {
 }
 
 impl AddAssign for Gf256 {
+    /// Performs in-place addition i.e. compound addition operation (XOR) of two Gf256 elements.
     #[allow(clippy::suspicious_op_assign_impl)]
     fn add_assign(&mut self, rhs: Self) {
         self.val ^= rhs.val;
@@ -89,6 +97,7 @@ impl AddAssign for Gf256 {
 impl Neg for Gf256 {
     type Output = Self;
 
+    /// Computes the additive inverse (itself, as XOR is self-inverse).
     fn neg(self) -> Self::Output {
         Gf256 { val: self.val }
     }
@@ -97,6 +106,7 @@ impl Neg for Gf256 {
 impl Sub for Gf256 {
     type Output = Self;
 
+    /// Performs subtraction (XOR) of two Gf256 elements.
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn sub(self, rhs: Self) -> Self::Output {
         Gf256 { val: self.val ^ rhs.val }
@@ -106,6 +116,7 @@ impl Sub for Gf256 {
 impl Mul for Gf256 {
     type Output = Self;
 
+    /// Performs multiplication of two Gf256 elements using logarithm and exponentiation tables.
     fn mul(self, rhs: Self) -> Self::Output {
         if self == Self::zero() || rhs == Self::zero() {
             return Self::zero();
@@ -121,6 +132,7 @@ impl Mul for Gf256 {
 impl Div for Gf256 {
     type Output = Option<Self>;
 
+    /// Performs division of two Gf256 elements using multiplicative inverse. Returns `None` if dividing by zero.
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn div(self, rhs: Self) -> Self::Output {
         rhs.inv().map(|rhs_inv| self * rhs_inv)
@@ -128,12 +140,14 @@ impl Div for Gf256 {
 }
 
 impl PartialEq for Gf256 {
+    /// Checks for equality between two Gf256 elements.
     fn eq(&self, other: &Self) -> bool {
         self.val == other.val
     }
 }
 
 impl Distribution<Gf256> for StandardUniform {
+    /// Samples a random Gf256 element.
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Gf256 {
         Gf256 { val: rng.random() }
     }
