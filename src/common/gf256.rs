@@ -64,6 +64,11 @@ impl Gf256 {
         Gf256 { val: 1 }
     }
 
+    /// Returns primitive element x, for GF(2^8) field with irreducible polynomial x^8 + x^4 + x^3 + x^2 + 1.
+    pub fn primitive_element() -> Self {
+        Gf256 { val: 2 }
+    }
+
     /// Computes the multiplicative inverse of the element. Returns `None` for the zero element.
     pub fn inv(self) -> Option<Self> {
         if self == Self::zero() {

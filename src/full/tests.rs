@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::{decoder::Decoder, encoder::Encoder, recoder::Recoder};
-use crate::RLNCError;
+use crate::{RLNCError, common::gf256::Gf256};
 use rand::Rng;
 
 #[test]
@@ -106,6 +106,73 @@ fn prop_test_rlnc_encoder_recoder_decoder() {
                 Ok(_) => {}
                 Err(e) => match e {
                     RLNCError::ReceivedAllPieces => break,
+                    RLNCError::PieceNotUseful => continue,
+                    _ => panic!("Did not expect this error during decoding: {e}"),
+                },
+            };
+        }
+
+        assert!(decoder.is_already_decoded());
+        let decoded_data = decoder.get_decoded_data().expect("Extracting decoded data must not fail!");
+
+        assert_eq!(data_copy, decoded_data);
+    });
+}
+
+/// Given a coded piece which can be interpreted as a polynomial with coefficients belonging to GF(2^8),
+/// this routine multiplies each coefficient of the polynomial with a scalar `a` s.t. `a` is a power of
+/// primitive element for GF(2^8) field, to produce a linearly dependent polynomial.
+fn make_linearly_dependent_piece(piece: &mut [u8]) {
+    piece.iter_mut().for_each(|elem| {
+        let scalar = Gf256::primitive_element();
+        let scaled = Gf256::new(*elem) * scalar;
+
+        *elem = scaled.get();
+    });
+}
+
+#[test]
+fn prop_test_rlnc_decoding_with_useless_pieces() {
+    const NUM_TEST_ITERATIONS: usize = 10;
+
+    const MIN_DATA_BYTE_LEN: usize = 1usize << 10;
+    const MAX_DATA_BYTE_LEN: usize = 1usize << 16;
+
+    const MIN_PIECE_COUNT: usize = 1usize << 5;
+    const MAX_PIECE_COUNT: usize = 1usize << 11;
+
+    let mut rng = rand::rng();
+
+    (0..NUM_TEST_ITERATIONS).for_each(|_| {
+        let data_byte_len = rng.random_range(MIN_DATA_BYTE_LEN..=MAX_DATA_BYTE_LEN);
+        let piece_count = rng.random_range(MIN_PIECE_COUNT..=MAX_PIECE_COUNT);
+
+        let data = (0..data_byte_len).map(|_| rng.random()).collect::<Vec<u8>>();
+        let data_copy = data.clone();
+
+        let (encoder, piece_byte_len) = Encoder::new(data, piece_count);
+        let mut decoder = Decoder::new(piece_byte_len, piece_count);
+
+        loop {
+            let mut coded_piece = encoder.code(&mut rng).expect("Generating new RLNC coded piece must not fail!");
+
+            match decoder.decode(&coded_piece) {
+                Ok(_) => {}
+                Err(e) => match e {
+                    RLNCError::ReceivedAllPieces => break,
+                    RLNCError::PieceNotUseful => continue,
+                    _ => panic!("Did not expect this error during decoding: {e}"),
+                },
+            };
+
+            if decoder.is_already_decoded() {
+                break;
+            }
+
+            make_linearly_dependent_piece(&mut coded_piece);
+            match decoder.decode(&coded_piece) {
+                Ok(_) => panic!("Decoding with linearly dependent coded piece must not succeed!"),
+                Err(e) => match e {
                     RLNCError::PieceNotUseful => continue,
                     _ => panic!("Did not expect this error during decoding: {e}"),
                 },
