@@ -42,28 +42,68 @@ impl Debug for RLNCConfig {
 
 const ARGS: &[RLNCConfig] = &[
     RLNCConfig {
-        data_byte_len: 1usize << 10,
+        data_byte_len: 1usize << 20,
+        piece_count: 1usize << 4,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 20,
         piece_count: 1usize << 5,
     },
     RLNCConfig {
-        data_byte_len: 1usize << 13,
+        data_byte_len: 1usize << 20,
         piece_count: 1usize << 6,
     },
     RLNCConfig {
-        data_byte_len: 1usize << 16,
+        data_byte_len: 1usize << 20,
         piece_count: 1usize << 7,
     },
     RLNCConfig {
-        data_byte_len: 1usize << 19,
+        data_byte_len: 1usize << 20,
         piece_count: 1usize << 8,
     },
     RLNCConfig {
-        data_byte_len: 1usize << 22,
-        piece_count: 1usize << 9,
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 4,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 5,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 6,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 7,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 8,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 25,
+        piece_count: 1usize << 4,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 25,
+        piece_count: 1usize << 5,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 25,
+        piece_count: 1usize << 6,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 25,
+        piece_count: 1usize << 7,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 25,
+        piece_count: 1usize << 8,
     },
 ];
 
-#[divan::bench(args = ARGS, max_time = Duration::from_secs(300), skip_ext_time = true)]
+#[divan::bench(args = ARGS, max_time = Duration::from_secs(100), skip_ext_time = true)]
 fn decode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
     let mut rng = rand::rng();
 

@@ -39,28 +39,68 @@ impl Debug for RLNCConfig {
 
 const ARGS: &[RLNCConfig] = &[
     RLNCConfig {
-        data_byte_len: 1usize << 10,
-        piece_count: 1usize << 5,
+        data_byte_len: 1usize << 20,
+        piece_count: 1usize << 4,
     },
     RLNCConfig {
-        data_byte_len: 1usize << 15,
+        data_byte_len: 1usize << 20,
         piece_count: 1usize << 5,
     },
     RLNCConfig {
         data_byte_len: 1usize << 20,
-        piece_count: 1usize << 10,
+        piece_count: 1usize << 6,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 20,
+        piece_count: 1usize << 7,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 20,
+        piece_count: 1usize << 8,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 4,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 5,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 6,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 7,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 8,
     },
     RLNCConfig {
         data_byte_len: 1usize << 25,
-        piece_count: 1usize << 10,
+        piece_count: 1usize << 4,
     },
     RLNCConfig {
-        data_byte_len: 1usize << 30,
-        piece_count: 1usize << 15,
+        data_byte_len: 1usize << 25,
+        piece_count: 1usize << 5,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 25,
+        piece_count: 1usize << 6,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 25,
+        piece_count: 1usize << 7,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 25,
+        piece_count: 1usize << 8,
     },
 ];
 
-#[divan::bench(args = ARGS, max_time = Duration::from_secs(300), skip_ext_time = true)]
+#[divan::bench(args = ARGS, max_time = Duration::from_secs(100), skip_ext_time = true)]
 fn encode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
     let mut rng = rand::rng();
     let data = (0..rlnc_config.data_byte_len).map(|_| rng.random()).collect::<Vec<u8>>();

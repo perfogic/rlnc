@@ -41,33 +41,83 @@ impl Debug for RLNCConfig {
 
 const ARGS: &[RLNCConfig] = &[
     RLNCConfig {
-        data_byte_len: 1usize << 10,
+        data_byte_len: 1usize << 20,
         piece_count: 1usize << 4,
         recoding_with_piece_count: 1usize << 3,
     },
     RLNCConfig {
-        data_byte_len: 1usize << 14,
+        data_byte_len: 1usize << 20,
+        piece_count: 1usize << 5,
+        recoding_with_piece_count: 1usize << 4,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 20,
         piece_count: 1usize << 6,
         recoding_with_piece_count: 1usize << 5,
     },
     RLNCConfig {
-        data_byte_len: 1usize << 18,
+        data_byte_len: 1usize << 20,
+        piece_count: 1usize << 7,
+        recoding_with_piece_count: 1usize << 6,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 20,
         piece_count: 1usize << 8,
         recoding_with_piece_count: 1usize << 7,
     },
     RLNCConfig {
-        data_byte_len: 1usize << 22,
-        piece_count: 1usize << 10,
-        recoding_with_piece_count: 1usize << 9,
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 4,
+        recoding_with_piece_count: 1usize << 3,
     },
     RLNCConfig {
-        data_byte_len: 1usize << 26,
-        piece_count: 1usize << 12,
-        recoding_with_piece_count: 1usize << 11,
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 5,
+        recoding_with_piece_count: 1usize << 4,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 6,
+        recoding_with_piece_count: 1usize << 5,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 7,
+        recoding_with_piece_count: 1usize << 6,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 24,
+        piece_count: 1usize << 8,
+        recoding_with_piece_count: 1usize << 7,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 25,
+        piece_count: 1usize << 4,
+        recoding_with_piece_count: 1usize << 3,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 25,
+        piece_count: 1usize << 5,
+        recoding_with_piece_count: 1usize << 4,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 25,
+        piece_count: 1usize << 6,
+        recoding_with_piece_count: 1usize << 5,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 25,
+        piece_count: 1usize << 7,
+        recoding_with_piece_count: 1usize << 6,
+    },
+    RLNCConfig {
+        data_byte_len: 1usize << 25,
+        piece_count: 1usize << 8,
+        recoding_with_piece_count: 1usize << 7,
     },
 ];
 
-#[divan::bench(args = ARGS, max_time = Duration::from_secs(300), skip_ext_time = true)]
+#[divan::bench(args = ARGS, max_time = Duration::from_secs(100), skip_ext_time = true)]
 fn recode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
     let mut rng = rand::rng();
     let data = (0..rlnc_config.data_byte_len).map(|_| rng.random()).collect::<Vec<u8>>();
