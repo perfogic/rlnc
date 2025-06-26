@@ -105,10 +105,10 @@ fn encode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
     let mut rng = rand::rng();
     let data = (0..rlnc_config.data_byte_len).map(|_| rng.random()).collect::<Vec<u8>>();
 
-    let (encoder, _) = Encoder::new(data, rlnc_config.piece_count);
+    let encoder = Encoder::new(data, rlnc_config.piece_count);
 
     bencher
-        .counter(divan::counter::BytesCount::new(rlnc_config.piece_count + rlnc_config.data_byte_len))
+        .counter(divan::counter::BytesCount::new(encoder.get_full_coded_piece_byte_len()))
         .with_inputs(rand::rng)
         .bench_refs(|rng| divan::black_box(&encoder).code(divan::black_box(rng)));
 }

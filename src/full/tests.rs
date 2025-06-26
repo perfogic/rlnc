@@ -23,8 +23,8 @@ fn prop_test_rlnc_encoder_decoder() {
         let data = (0..data_byte_len).map(|_| rng.random()).collect::<Vec<u8>>();
         let data_copy = data.clone();
 
-        let (encoder, piece_byte_len) = Encoder::new(data, piece_count);
-        let mut decoder = Decoder::new(piece_byte_len, piece_count);
+        let encoder = Encoder::new(data, piece_count);
+        let mut decoder = Decoder::new(encoder.get_piece_byte_len(), encoder.get_piece_count());
 
         loop {
             let coded_piece = encoder.code(&mut rng).expect("Generating new RLNC coded piece must not fail!");
@@ -71,8 +71,8 @@ fn prop_test_rlnc_encoder_recoder_decoder() {
         let data = (0..data_byte_len).map(|_| rng.random()).collect::<Vec<u8>>();
         let data_copy = data.clone();
 
-        let (encoder, piece_byte_len) = Encoder::new(data, piece_count);
-        let mut decoder = Decoder::new(piece_byte_len, piece_count);
+        let encoder = Encoder::new(data, piece_count);
+        let mut decoder = Decoder::new(encoder.get_piece_byte_len(), encoder.get_piece_count());
 
         'OUTER: loop {
             let num_pieces_to_recode = rng.random_range(MIN_NUM_PIECES_TO_RECODE..=MAX_NUM_PIECES_TO_RECODE);
@@ -81,7 +81,8 @@ fn prop_test_rlnc_encoder_recoder_decoder() {
                 .flat_map(|_| encoder.code(&mut rng).expect("Generating new RLNC coded piece must not fail!"))
                 .collect::<Vec<u8>>();
 
-            let recoder = Recoder::new(coded_pieces, piece_byte_len, piece_count).expect("Construction of RLNC recoder must not fail!");
+            let recoder = Recoder::new(coded_pieces, encoder.get_full_coded_piece_byte_len(), encoder.get_piece_count())
+                .expect("Construction of RLNC recoder must not fail!");
 
             let num_recoded_pieces_to_use = rng.random_range(MIN_NUM_RECODED_PIECES_TO_USE..=MAX_NUM_RECODED_PIECES_TO_USE);
             let mut recoded_piece_idx = 0;
@@ -150,8 +151,8 @@ fn prop_test_rlnc_decoding_with_useless_pieces() {
         let data = (0..data_byte_len).map(|_| rng.random()).collect::<Vec<u8>>();
         let data_copy = data.clone();
 
-        let (encoder, piece_byte_len) = Encoder::new(data, piece_count);
-        let mut decoder = Decoder::new(piece_byte_len, piece_count);
+        let encoder = Encoder::new(data, piece_count);
+        let mut decoder = Decoder::new(encoder.get_piece_byte_len(), encoder.get_piece_count());
 
         loop {
             let mut coded_piece = encoder.code(&mut rng).expect("Generating new RLNC coded piece must not fail!");

@@ -108,7 +108,7 @@ fn decode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
     let mut rng = rand::rng();
 
     let data = (0..rlnc_config.data_byte_len).map(|_| rng.random()).collect::<Vec<u8>>();
-    let (encoder, piece_byte_len) = Encoder::new(data, rlnc_config.piece_count);
+    let encoder = Encoder::new(data, rlnc_config.piece_count);
 
     let num_pieces_to_produce = rlnc_config.piece_count * 2;
     let coded_pieces = (0..num_pieces_to_produce).flat_map(|_| encoder.code(&mut rng).unwrap()).collect::<Vec<u8>>();
@@ -116,7 +116,7 @@ fn decode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
     // Should this bytescount be computed like this ?
     bencher
         .counter(divan::counter::BytesCount::new(rlnc_config.piece_count * rlnc_config.data_byte_len))
-        .with_inputs(|| Decoder::new(piece_byte_len, rlnc_config.piece_count))
+        .with_inputs(|| Decoder::new(encoder.get_piece_byte_len(), encoder.get_piece_count()))
         .bench_refs(|mut decoder| {
             let mut piece_index = 0;
             let per_piece_byte_len = coded_pieces.len() / num_pieces_to_produce;

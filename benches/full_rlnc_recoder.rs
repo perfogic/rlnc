@@ -122,7 +122,7 @@ fn recode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
     let mut rng = rand::rng();
     let data = (0..rlnc_config.data_byte_len).map(|_| rng.random()).collect::<Vec<u8>>();
 
-    let (encoder, piece_byte_len) = Encoder::new(data, rlnc_config.piece_count);
+    let encoder = Encoder::new(data, rlnc_config.piece_count);
     let coded_pieces = (0..rlnc_config.recoding_with_piece_count)
         .flat_map(|_| encoder.code(&mut rng).unwrap())
         .collect::<Vec<u8>>();
@@ -131,7 +131,7 @@ fn recode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
         .counter(divan::counter::BytesCount::new(rlnc_config.recoding_with_piece_count + coded_pieces.len()))
         .with_inputs(|| {
             let rng = rand::rng();
-            let recoder = Recoder::new(coded_pieces.clone(), piece_byte_len, rlnc_config.piece_count).unwrap();
+            let recoder = Recoder::new(coded_pieces.clone(), encoder.get_full_coded_piece_byte_len(), encoder.get_piece_count()).unwrap();
 
             (rng, recoder)
         })
