@@ -15,16 +15,15 @@ pub struct Recoder {
     coding_vectors: Vec<Gf256>,
     encoder: Encoder,
     num_pieces_received: usize,
-    piece_byte_len: usize,
+    full_coded_piece_byte_len: usize,
     num_pieces_coded_together: usize,
 }
 
 impl Recoder {
     /// Creates a new `Recoder` instance from a vector of received coded pieces.
     ///
-    /// Each coded piece in `data` is expected to be prepended with its coding
-    /// vector. The length of each coded piece (including the coding vector)
-    /// must be consistent.
+    /// Each full coded piece in `data` is of `full_coded_piece_byte_len` bytes.
+    /// A full coded piece = coding vector ++ coded piece
     ///
     /// The `Recoder` extracts the coding vectors and coded pieces from the input
     /// data. It then initializes an internal `Encoder` that implicitly
@@ -32,21 +31,20 @@ impl Recoder {
     ///
     /// # Arguments
     ///
-    /// * `data`: A vector of bytes containing the concatenated coded pieces, each
-    ///   preceded by its coding vector. The total length must be a multiple
-    ///   of `num_pieces_coded_together + piece_byte_len`.
-    /// * `piece_byte_len`: The byte length of the original (uncoded) data pieces.
+    /// * `data`: A vector of bytes containing the concatenated full coded pieces, each of
+    /// `full_coded_piece_byte_len` bytes length.
+    /// * `full_coded_piece_byte_len`: The byte length of a full coded piece.
     /// * `num_pieces_coded_together`: The number of original pieces that were
     ///   linearly combined to create each coded piece. This is also the length
-    ///   of the coding vector prepended to each coded piece.
+    ///   of the coding vector prepended to each full coded piece.
     ///
     /// # Errors
     ///
     /// Returns `RLNCError::NotEnoughPiecesToRecode` if the input `data` is empty
     /// or does not contain at least one full coded piece.
-    pub fn new(data: Vec<u8>, piece_byte_len: usize, num_pieces_coded_together: usize) -> Result<Recoder, RLNCError> {
-        let full_coded_piece_len = num_pieces_coded_together + piece_byte_len;
-        let num_pieces_received = data.len() / full_coded_piece_len;
+    pub fn new(data: Vec<u8>, full_coded_piece_byte_len: usize, num_pieces_coded_together: usize) -> Result<Recoder, RLNCError> {
+        let piece_byte_len = full_coded_piece_byte_len - num_pieces_coded_together;
+        let num_pieces_received = data.len() / full_coded_piece_byte_len;
 
         if num_pieces_received == 0 {
             return Err(RLNCError::NotEnoughPiecesToRecode);
@@ -55,7 +53,7 @@ impl Recoder {
         let mut coding_vectors = Vec::with_capacity(num_pieces_received * num_pieces_coded_together);
         let mut coded_pieces = Vec::with_capacity(num_pieces_received * piece_byte_len);
 
-        data.chunks_exact(full_coded_piece_len).for_each(|full_coded_piece| {
+        data.chunks_exact(full_coded_piece_byte_len).for_each(|full_coded_piece| {
             let coding_vector = &full_coded_piece[..num_pieces_coded_together];
             let coded_piece = &full_coded_piece[num_pieces_coded_together..];
 
@@ -63,12 +61,13 @@ impl Recoder {
             coded_pieces.extend_from_slice(coded_piece);
         });
 
-        let (encoder, _) = Encoder::without_padding(coded_pieces, num_pieces_received)?;
+        let encoder = Encoder::without_padding(coded_pieces, num_pieces_received)?;
+
         Ok(Recoder {
             coding_vectors,
             encoder,
             num_pieces_received,
-            piece_byte_len,
+            full_coded_piece_byte_len,
             num_pieces_coded_together,
         })
     }
@@ -99,28 +98,31 @@ impl Recoder {
     /// the coded piece (e.g., if the recoding vector is somehow invalid,
     /// though this is unlikely with a random vector).
     pub fn recode<R: Rng + ?Sized>(&self, rng: &mut R) -> Result<Vec<u8>, RLNCError> {
-        let random_coding_vector = (0..self.num_pieces_received).map(|_| rng.random()).collect::<Vec<Gf256>>();
-        let rhs_mat_cols = self.num_pieces_coded_together;
+        let random_recoding_vector = (0..self.num_pieces_received).map(|_| rng.random()).collect::<Vec<Gf256>>();
 
         // Compute the resulting coding vector for the original source pieces
-        // by multiplying the random recoding vector by the matrix of received coding vectors.
-        let mut computed_coding_vector = vec![0u8; rhs_mat_cols];
-        computed_coding_vector.reserve(self.piece_byte_len);
+        // by multiplying the random sampled recoding vector by the matrix of received coding vectors.
+        let computed_coding_vector = (0..self.num_pieces_coded_together)
+            .map(|coeff_idx| {
+                random_recoding_vector
+                    .iter()
+                    .enumerate()
+                    .fold(Gf256::default(), |acc, (recoding_vec_idx, &cur)| {
+                        let row_begins_at = recoding_vec_idx * self.num_pieces_coded_together;
+                        acc + cur * self.coding_vectors[row_begins_at + coeff_idx]
+                    })
+                    .get()
+            })
+            .collect::<Vec<u8>>();
 
-        for (j, res_symbol) in computed_coding_vector.iter_mut().enumerate() {
-            let mut local_res = Gf256::default();
-
-            for (k, &random_symbol) in random_coding_vector.iter().enumerate() {
-                local_res += random_symbol * self.coding_vectors[k * rhs_mat_cols + j];
-            }
-
-            *res_symbol = local_res.get();
-        }
-
-        let full_coded_piece = self.encoder.code_with_coding_vector(&random_coding_vector)?;
+        let full_coded_piece = self.encoder.code_with_coding_vector(&random_recoding_vector)?;
         let coded_piece = &full_coded_piece[self.num_pieces_received..];
 
-        computed_coding_vector.extend_from_slice(coded_piece);
-        Ok(computed_coding_vector)
+        let mut full_recoded_piece = vec![0u8; self.full_coded_piece_byte_len];
+
+        full_recoded_piece[..self.num_pieces_coded_together].copy_from_slice(&computed_coding_vector);
+        full_recoded_piece[self.num_pieces_coded_together..].copy_from_slice(coded_piece);
+
+        Ok(full_recoded_piece)
     }
 }
