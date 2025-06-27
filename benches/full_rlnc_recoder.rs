@@ -128,12 +128,17 @@ fn recode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
         .collect::<Vec<u8>>();
 
     bencher
-        .counter(divan::counter::BytesCount::new(rlnc_config.recoding_with_piece_count + coded_pieces.len()))
         .with_inputs(|| {
             let rng = rand::rng();
             let recoder = Recoder::new(coded_pieces.clone(), encoder.get_full_coded_piece_byte_len(), encoder.get_piece_count()).unwrap();
 
             (rng, recoder)
+        })
+        .input_counter(|(_, recoder)| {
+            divan::counter::BytesCount::new(
+                recoder.get_full_coded_piece_byte_len() * recoder.get_num_pieces_recoded_together() + // Number of bytes used as input to recoder
+                recoder.get_full_coded_piece_byte_len(), // Number of bytes for each recoded piece
+            )
         })
         .bench_refs(|(rng, recoder)| divan::black_box(&recoder).recode(divan::black_box(rng)));
 }

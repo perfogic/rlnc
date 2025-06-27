@@ -108,7 +108,10 @@ fn encode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
     let encoder = Encoder::new(data, rlnc_config.piece_count);
 
     bencher
-        .counter(divan::counter::BytesCount::new(encoder.get_full_coded_piece_byte_len()))
+        .counter(divan::counter::BytesCount::new(
+            encoder.get_piece_byte_len() * encoder.get_piece_count() +  // Number of bytes used as input to encoder
+            encoder.get_full_coded_piece_byte_len(), // Number of bytes for each coded piece
+        ))
         .with_inputs(rand::rng)
         .bench_refs(|rng| divan::black_box(&encoder).code(divan::black_box(rng)));
 }
