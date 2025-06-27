@@ -2,9 +2,22 @@
 name = "rlnc"
 version = "0.1.0"
 edition = "2024"
-description = "Random Linear Network Coding"
-license = "MPL-2.0"
 resolver = "3"
+rust-version = "1.85.0"
+authors = ["Anjan Roy <hello@itzmeanjan.in>"]
+description = "Random Linear Network Coding"
+readme = "README.md"
+repository = "https://github.com/itzmeanjan/rlnc.git"
+license = "MPL-2.0"
+keywords = [
+    "rlnc",
+    "network-coding",
+    "erasure-coding",
+    "fountain-codes",
+    "data-transmission",
+]
+categories = ["network-programming", "encoding", "algorithms"]
+
 
 [dependencies]
 rand = "=0.9.1"
