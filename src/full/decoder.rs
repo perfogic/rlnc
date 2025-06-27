@@ -21,6 +21,31 @@ pub struct Decoder {
 }
 
 impl Decoder {
+    /// Number of pieces original data got splitted into and coded together.
+    pub fn get_num_pieces_coded_together(&self) -> usize {
+        self.required_piece_count
+    }
+
+    /// After padding the original data, it gets splitted into `self.get_num_pieces_coded_together()` many pieces, which results into these many bytes per piece.
+    pub fn get_piece_byte_len(&self) -> usize {
+        self.piece_byte_len
+    }
+
+    /// Each full coded piece consists of `self.get_num_pieces_coded_together()` random coefficients, appended by corresponding encoded piece of `self.get_piece_byte_len()` bytes.
+    pub fn get_full_coded_piece_byte_len(&self) -> usize {
+        self.get_num_pieces_coded_together() + self.get_piece_byte_len()
+    }
+
+    /// Number of pieces received by the decoder so far.
+    pub fn get_received_piece_count(&self) -> usize {
+        self.received_piece_count
+    }
+
+    /// Number of pieces remaining to be received by the decoder for successful decoding.
+    pub fn get_remaining_piece_count(&self) -> usize {
+        self.get_num_pieces_coded_together() - self.get_received_piece_count()
+    }
+
     /// Creates a new `Decoder` instance.
     ///
     /// # Arguments
