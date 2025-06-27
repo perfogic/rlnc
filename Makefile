@@ -31,3 +31,7 @@ bench: ## Run all benchmarks
 .PHONY: clean
 clean: ## Removes cargo target directory
 	cargo clean
+
+.PHONY: example
+example: ## Runs the Full RLNC example program
+	cargo run --example full_rlnc
