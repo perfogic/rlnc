@@ -28,7 +28,7 @@ For ensuring functional correctness of RLNC operations, the library includes a c
 make test
 
 # Testing on web assembly target, using `wasmtime`.
-rustup target add wasm32-unknown-unknown wasm32-wasip1
+rustup target add wasm32-wasip1
 cargo install wasmtime-cli --locked
 make test-wasm
 ```
