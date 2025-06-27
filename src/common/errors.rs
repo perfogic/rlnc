@@ -1,17 +1,21 @@
 /// Errors that can occur during RLNC (Random Linear Network Coding) encoding/ recoding/ decoding.
 #[derive(Debug)]
 pub enum RLNCError {
-    // Encoder
+    /// When the coding vector's length does not match the expected dimension during encoding.
     CodingVectorLengthMismatch,
+    /// When the data length does not match the expected block size during encoding.
     DataLengthMismatch,
 
-    // Recoder
+    /// When there are not enough linearly independent pieces available to perform recoding.
     NotEnoughPiecesToRecode,
 
-    // Decoder
+    /// When a received piece does not provide new linearly independent information.
     PieceNotUseful,
+    /// When all necessary pieces have already been received, and no further pieces are needed to decode.
     ReceivedAllPieces,
+    /// When an attempt is made to retrieve decoded data, but not all required pieces have arrived yet.
     NotAllPiecesReceivedYet,
+    /// When the format or structure of the decoded data is not as expected.
     InvalidDecodedDataFormat,
 }
 

@@ -20,6 +20,26 @@ pub struct Recoder {
 }
 
 impl Recoder {
+    /// Number of pieces original data got splitted into to be coded together.
+    pub fn get_original_num_pieces_coded_together(&self) -> usize {
+        self.num_pieces_coded_together
+    }
+
+    /// Number of pieces received by Recoder, which is getting recoded together, producing new pieces.
+    pub fn get_num_pieces_recoded_together(&self) -> usize {
+        self.num_pieces_received
+    }
+
+    /// After padding the original data, it gets splitted into `self.get_original_num_pieces_coded_together()` many pieces, which results into these many bytes per piece.
+    pub fn get_piece_byte_len(&self) -> usize {
+        self.full_coded_piece_byte_len - self.num_pieces_coded_together
+    }
+
+    /// Each full coded piece consists of `self.get_original_num_pieces_coded_together()` random coefficients, appended by corresponding encoded piece of `self.get_piece_byte_len()` bytes.
+    pub fn get_full_coded_piece_byte_len(&self) -> usize {
+        self.full_coded_piece_byte_len
+    }
+
     /// Creates a new `Recoder` instance from a vector of received coded pieces.
     ///
     /// Each full coded piece in `data` is of `full_coded_piece_byte_len` bytes.
@@ -74,7 +94,7 @@ impl Recoder {
 
     /// Generates a new coded piece by recoding the source pieces using a randomly sampled coding vector.
     ///
-    /// This method generates a random recoding vector (length `num_pieces_received`),
+    /// This method generates a random recoding vector (length `self.get_num_pieces_recoded_together()`),
     /// computes the resulting coding vector for the original source pieces by
     /// multiplying the random vector by the matrix of received coding vectors,
     /// and then uses the internal `Encoder` to produce a new coded piece based
