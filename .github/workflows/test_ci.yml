@@ -41,3 +41,6 @@ jobs:
           rustup target add wasm32-wasip1
           cargo install wasmtime-cli --locked
           make test-wasm
+
+      - name: Run examples
+        run: make example
