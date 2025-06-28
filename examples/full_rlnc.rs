@@ -33,7 +33,7 @@ fn main() {
 
     // 4. Simulate a sender generating initial coded pieces
     let num_initial_coded_pieces_from_sender = encoder.get_piece_count() / 2; // Send half directly
-    println!("\nSender generating {} initial coded pieces...", num_initial_coded_pieces_from_sender);
+    println!("\nSender generating {num_initial_coded_pieces_from_sender} initial coded pieces...");
     let mut pieces_for_recoder = Vec::new();
 
     for i in 0..num_initial_coded_pieces_from_sender {
@@ -47,7 +47,7 @@ fn main() {
                 println!("  Decoded direct piece {}: All pieces received, breaking.", i + 1);
                 break;
             }
-            Err(e) => panic!("Unexpected error during direct decoding: {:?}", e),
+            Err(e) => panic!("Unexpected error during direct decoding: {e:?}"),
         }
     }
 
@@ -74,7 +74,7 @@ fn main() {
                 println!("  Decoded recoded piece {}: All pieces received, breaking.", i + 1);
                 break;
             }
-            Err(e) => panic!("Unexpected error during recoded piece decoding: {:?}", e),
+            Err(e) => panic!("Unexpected error during recoded piece decoding: {e:?}"),
         }
     }
 
@@ -109,7 +109,7 @@ fn main() {
                 println!("  Decoded recoded piece {}: All pieces received, breaking.", i + 1);
                 break;
             }
-            Err(e) => panic!("Unexpected error during recoded piece decoding: {:?}", e),
+            Err(e) => panic!("Unexpected error during recoded piece decoding: {e:?}"),
         }
     }
 
@@ -122,7 +122,7 @@ fn main() {
         match decoder.decode(&coded_piece) {
             Ok(_) => {
                 direct_piece_count += 1;
-                println!("  Decoded direct piece {}: Useful.", direct_piece_count);
+                println!("  Decoded direct piece {direct_piece_count}: Useful.");
             }
             Err(RLNCError::PieceNotUseful) => {
                 println!("  Decoded direct piece {}: Not useful.", direct_piece_count + 1);
@@ -131,7 +131,7 @@ fn main() {
                 println!("  All pieces received via direct encoding.");
                 break;
             }
-            Err(e) => panic!("Unexpected error during direct decoding (post-recoding): {:?}", e),
+            Err(e) => panic!("Unexpected error during direct decoding (post-recoding): {e:?}"),
         }
     }
 

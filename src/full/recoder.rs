@@ -52,7 +52,7 @@ impl Recoder {
     /// # Arguments
     ///
     /// * `data`: A vector of bytes containing the concatenated full coded pieces, each of
-    /// `full_coded_piece_byte_len` bytes length.
+    ///   `full_coded_piece_byte_len` bytes length.
     /// * `full_coded_piece_byte_len`: The byte length of a full coded piece.
     /// * `num_pieces_coded_together`: The number of original pieces that were
     ///   linearly combined to create each coded piece. This is also the length
