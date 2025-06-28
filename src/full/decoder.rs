@@ -36,14 +36,19 @@ impl Decoder {
         self.get_num_pieces_coded_together() + self.get_piece_byte_len()
     }
 
-    /// Number of pieces received by the decoder so far.
+    /// Total number of pieces received by the decoder so far.
     pub fn get_received_piece_count(&self) -> usize {
         self.received_piece_count
     }
 
+    /// Number of useful pieces received by the decoder so far.
+    pub fn get_useful_piece_count(&self) -> usize {
+        self.useful_piece_count
+    }
+
     /// Number of pieces remaining to be received by the decoder for successful decoding.
     pub fn get_remaining_piece_count(&self) -> usize {
-        self.get_num_pieces_coded_together() - self.get_received_piece_count()
+        self.get_num_pieces_coded_together() - self.get_useful_piece_count()
     }
 
     /// Creates a new `Decoder` instance.
