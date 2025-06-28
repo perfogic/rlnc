@@ -1,4 +1,7 @@
 # rlnc
+Random Linear Network Coding
+
+## Introduction
 `rlnc` is a Rust library that implements Random Linear Network Coding (RLNC) over $GF(2^8)$ with primitive polynomial $x^8 + x^4 + x^3 + x^2 + 1$. This library provides functionalities for encoding data, decoding coded pieces to recover the original data, and recoding existing coded pieces.
 
 For a quick understanding of RLNC, have a look at my blog post @ https://itzmeanjan.in/pages/rlnc-in-depth.html.
@@ -6,6 +9,8 @@ For a quick understanding of RLNC, have a look at my blog post @ https://itzmean
 Random Linear Network Coding (RLNC) excels in highly dynamic and lossy environments like multicast, peer-to-peer networks, and distributed storage, due to its "any K of N" property and inherent recoding capability. Unlike Reed-Solomon, which requires specific symbols for deterministic recovery, RLNC allows decoding from *any* set of linearly independent packets. Compared to Fountain Codes, RLNC offers robust algebraic linearity with coding vector overhead, whereas Fountain codes prioritize very low decoding complexity and indefinite symbol generation, often for large-scale broadcasts.
 
 ## Features
+For now this crate implements only **Full RLNC** scheme.
+
 - **Encoder**: Splits original data into fixed-size pieces and generates new coded pieces by linearly combining these original pieces with random coefficients, sampled from $GF(2^8)$.
 - **Decoder**: Receives coded pieces, applies Gaussian elimination to recover the original data, and handles linearly dependent pieces gracefully.
 - **Recoder**: Takes already coded pieces and generates new coded pieces from them, facilitating multi-hop data distribution without requiring intermediate decoding.
@@ -20,7 +25,7 @@ $ rustc --version
 rustc 1.88.0 (6b00bc388 2025-06-23)
 ```
 
-## Running Tests
+## Testing
 For ensuring functional correctness of RLNC operations, the library includes a comprehensive test suite. Run all the tests.
 
 ```bash
@@ -46,8 +51,7 @@ test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 > [!NOTE]
 > There is a help menu, which introduces you to all available commands; just run `$ make` from the root directory of this project.
 
-## Running Benchmarks
-
+## Benchmarking
 Performance benchmarks are included to evaluate the efficiency of the RLNC scheme. These benchmarks measure the time taken for various RLNC operations.
 
 To run the benchmarks, execute the following command from the root of the project:
@@ -458,25 +462,154 @@ full_rlnc_decoder                             fastest       │ slowest       �
                                               3.706 MiB/s   │ 3.698 MiB/s   │ 3.704 MiB/s   │ 3.704 MiB/s   │         │
 ```
 
-## Getting Started
+## Usage
 
 To use `rlnc` in your Rust project, add it as a dependency in your `Cargo.toml`:
 
 ```toml
 [dependencies]
 rlnc = "0.1.0" # Use the latest version available
-rand = { version = "=0.9.1", features = ["small_rng"] } # Required for random number generation
+rand = { version = "=0.9.1" } # Required for random number generation
 ```
 
 ### Full RLNC Workflow Example
 
 I maintain an example demonstrating the Full RLNC workflow:
 
-- Encoding original data
-- Recoding to generate new pieces (simulating a relay node).
+- Encoding original data into coded pieces.
+- Recoding to generate new pieces from received coded pieces. It simulates a relay node.
 - Finally decoding all received pieces to recover the original data.
 
 > [!NOTE]
-> New recoded pieces could be either useful or not, based on Recoder input coded pieces from which they are recoded from and whether they have already been seen by Decoder or not.
+> New recoded pieces could be either useful or not for the Decoder, based on Recoder input coded pieces i.e. from which they are recoded and whether they have already been seen by Decoder or not.
 
 See [full_rlnc.rs](./examples/full_rlnc.rs) example program. Run the program with `$ make example`.
+
+```bash
+Initialized Encoder with 10240 bytes of data, split into 32 pieces, each of 321 bytes. Each coded piece will be of 353 bytes.
+Initializing Decoder, expecting 32 original pieces of 321 bytes each.
+
+Sender generating 16 initial coded pieces...
+  Decoded direct piece 1: Useful.
+  Decoded direct piece 2: Useful.
+  Decoded direct piece 3: Useful.
+  Decoded direct piece 4: Useful.
+  Decoded direct piece 5: Useful.
+  Decoded direct piece 6: Useful.
+  Decoded direct piece 7: Useful.
+  Decoded direct piece 8: Useful.
+  Decoded direct piece 9: Useful.
+  Decoded direct piece 10: Useful.
+  Decoded direct piece 11: Useful.
+  Decoded direct piece 12: Useful.
+  Decoded direct piece 13: Useful.
+  Decoded direct piece 14: Useful.
+  Decoded direct piece 15: Useful.
+  Decoded direct piece 16: Useful.
+
+Initializing Recoder with 5648 bytes of received coded pieces.
+
+Recoder active. Generating recoded pieces...
+  Decoded recoded piece 1: Not useful.
+  Decoded recoded piece 2: Not useful.
+  Decoded recoded piece 3: Not useful.
+  Decoded recoded piece 4: Not useful.
+  Decoded recoded piece 5: Not useful.
+  Decoded recoded piece 6: Not useful.
+  Decoded recoded piece 7: Not useful.
+  Decoded recoded piece 8: Not useful.
+  Decoded recoded piece 9: Not useful.
+  Decoded recoded piece 10: Not useful.
+  Decoded recoded piece 11: Not useful.
+  Decoded recoded piece 12: Not useful.
+  Decoded recoded piece 13: Not useful.
+  Decoded recoded piece 14: Not useful.
+  Decoded recoded piece 15: Not useful.
+  Decoded recoded piece 16: Not useful.
+  Decoded recoded piece 17: Not useful.
+  Decoded recoded piece 18: Not useful.
+  Decoded recoded piece 19: Not useful.
+  Decoded recoded piece 20: Not useful.
+  Decoded recoded piece 21: Not useful.
+  Decoded recoded piece 22: Not useful.
+  Decoded recoded piece 23: Not useful.
+  Decoded recoded piece 24: Not useful.
+  Decoded recoded piece 25: Not useful.
+  Decoded recoded piece 26: Not useful.
+  Decoded recoded piece 27: Not useful.
+  Decoded recoded piece 28: Not useful.
+  Decoded recoded piece 29: Not useful.
+  Decoded recoded piece 30: Not useful.
+  Decoded recoded piece 31: Not useful.
+  Decoded recoded piece 32: Not useful.
+  Decoded recoded piece 33: Not useful.
+  Decoded recoded piece 34: Not useful.
+  Decoded recoded piece 35: Not useful.
+  Decoded recoded piece 36: Not useful.
+  Decoded recoded piece 37: Not useful.
+  Decoded recoded piece 38: Not useful.
+  Decoded recoded piece 39: Not useful.
+  Decoded recoded piece 40: Not useful.
+  Decoded recoded piece 41: Not useful.
+  Decoded recoded piece 42: Not useful.
+  Decoded recoded piece 43: Not useful.
+  Decoded recoded piece 44: Not useful.
+  Decoded recoded piece 45: Not useful.
+  Decoded recoded piece 46: Not useful.
+  Decoded recoded piece 47: Not useful.
+  Decoded recoded piece 48: Not useful.
+  Decoded recoded piece 49: Not useful.
+  Decoded recoded piece 50: Not useful.
+  Decoded recoded piece 51: Not useful.
+  Decoded recoded piece 52: Not useful.
+  Decoded recoded piece 53: Not useful.
+  Decoded recoded piece 54: Not useful.
+  Decoded recoded piece 55: Not useful.
+  Decoded recoded piece 56: Not useful.
+  Decoded recoded piece 57: Not useful.
+  Decoded recoded piece 58: Not useful.
+  Decoded recoded piece 59: Not useful.
+  Decoded recoded piece 60: Not useful.
+  Decoded recoded piece 61: Not useful.
+  Decoded recoded piece 62: Not useful.
+  Decoded recoded piece 63: Not useful.
+  Decoded recoded piece 64: Not useful.
+
+Initializing a new Recoder with 5648 bytes of received coded pieces.
+  Decoded recoded piece 1: Useful.
+  Decoded recoded piece 2: Useful.
+  Decoded recoded piece 3: Useful.
+  Decoded recoded piece 4: Useful.
+  Decoded recoded piece 5: Useful.
+  Decoded recoded piece 6: Useful.
+  Decoded recoded piece 7: Useful.
+  Decoded recoded piece 8: Useful.
+
+Still need more pieces. Generating direct piece 17 from encoder...
+  Decoded direct piece 17: Useful.
+
+Still need more pieces. Generating direct piece 18 from encoder...
+  Decoded direct piece 18: Useful.
+
+Still need more pieces. Generating direct piece 19 from encoder...
+  Decoded direct piece 19: Useful.
+
+Still need more pieces. Generating direct piece 20 from encoder...
+  Decoded direct piece 20: Useful.
+
+Still need more pieces. Generating direct piece 21 from encoder...
+  Decoded direct piece 21: Useful.
+
+Still need more pieces. Generating direct piece 22 from encoder...
+  Decoded direct piece 22: Useful.
+
+Still need more pieces. Generating direct piece 23 from encoder...
+  Decoded direct piece 23: Useful.
+
+Still need more pieces. Generating direct piece 24 from encoder...
+  Decoded direct piece 24: Useful.
+
+Retrieving decoded data...
+
+RLNC workflow completed successfully! Original data matches decoded data.
+```
