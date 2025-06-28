@@ -1,9 +1,50 @@
 [package]
 name = "rlnc"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
+resolver = "3"
+rust-version = "1.85.0"
+authors = ["Anjan Roy <hello@itzmeanjan.in>"]
 description = "Random Linear Network Coding"
+readme = "README.md"
+repository = "https://github.com/itzmeanjan/rlnc.git"
 license = "MPL-2.0"
+keywords = [
+    "rlnc",
+    "network-coding",
+    "erasure-coding",
+    "fountain-codes",
+    "data-transmission",
+]
+categories = ["network-programming", "encoding", "algorithms"]
+
 
 [dependencies]
 rand = "=0.9.1"
+
+[dev-dependencies]
+divan = "=0.1.21"
+
+[[bench]]
+name = "full_rlnc_encoder"
+harness = false
+
+[[bench]]
+name = "full_rlnc_recoder"
+harness = false
+
+[[bench]]
+name = "full_rlnc_decoder"
+harness = false
+
+[profile.optimized]
+inherits = "release"
+codegen-units = 1
+lto = "thin"
+panic = "abort"
+
+[profile.test-release]
+inherits = "release"
+debug = true
+debug-assertions = true
+overflow-checks = true

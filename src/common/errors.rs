@@ -1,0 +1,39 @@
+/// Errors that can occur during RLNC (Random Linear Network Coding) encoding/ recoding/ decoding.
+#[derive(Debug)]
+pub enum RLNCError {
+    /// When the coding vector's length does not match the expected dimension during encoding.
+    CodingVectorLengthMismatch,
+    /// When the data length does not match the expected block size during encoding.
+    DataLengthMismatch,
+
+    /// When there are not enough linearly independent pieces available to perform recoding.
+    NotEnoughPiecesToRecode,
+
+    /// When a received piece does not provide new linearly independent information.
+    PieceNotUseful,
+    /// When all necessary pieces have already been received, and no further pieces are needed to decode.
+    ReceivedAllPieces,
+    /// When an attempt is made to retrieve decoded data, but not all required pieces have arrived yet.
+    NotAllPiecesReceivedYet,
+    /// When the format or structure of the decoded data is not as expected.
+    InvalidDecodedDataFormat,
+}
+
+impl std::fmt::Display for RLNCError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            // Encoder
+            RLNCError::CodingVectorLengthMismatch => write!(f, "Coding vector length mismatch"),
+            RLNCError::DataLengthMismatch => write!(f, "Data length mismatch"),
+
+            // Recoder
+            RLNCError::NotEnoughPiecesToRecode => write!(f, "Not enough pieces received to recode"),
+
+            // Decoder
+            RLNCError::PieceNotUseful => write!(f, "Received piece is not useful"),
+            RLNCError::ReceivedAllPieces => write!(f, "Received all pieces"),
+            RLNCError::NotAllPiecesReceivedYet => write!(f, "Not all pieces are received yet"),
+            RLNCError::InvalidDecodedDataFormat => write!(f, "Invalid decoded data format"),
+        }
+    }
+}
