@@ -474,7 +474,7 @@ To use `rlnc` in your Rust project, add it as a dependency in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rlnc = "0.1.0" # Use the latest version available
+rlnc = "0.2.0" # Use the latest version available
 rand = { version = "=0.9.1" } # Required for random number generation
 ```
 
