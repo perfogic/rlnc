@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::{decoder::Decoder, encoder::Encoder, recoder::Recoder};
-use crate::{RLNCError, common::gf256::Gf256};
+use crate::RLNCError;
 use rand::Rng;
 
 #[test]
@@ -120,18 +120,6 @@ fn prop_test_rlnc_encoder_recoder_decoder() {
     });
 }
 
-/// Given a coded piece which can be interpreted as a polynomial with coefficients belonging to GF(2^8),
-/// this routine multiplies each coefficient of the polynomial with a scalar `a` s.t. `a` is a power of
-/// primitive element for GF(2^8) field, to produce a linearly dependent polynomial.
-fn make_linearly_dependent_piece(piece: &mut [u8]) {
-    piece.iter_mut().for_each(|elem| {
-        let scalar = Gf256::primitive_element();
-        let scaled = Gf256::new(*elem) * scalar;
-
-        *elem = scaled.get();
-    });
-}
-
 #[test]
 fn prop_test_rlnc_decoding_with_useless_pieces() {
     const NUM_TEST_ITERATIONS: usize = 10;
@@ -151,28 +139,57 @@ fn prop_test_rlnc_decoding_with_useless_pieces() {
         let data = (0..data_byte_len).map(|_| rng.random()).collect::<Vec<u8>>();
         let data_copy = data.clone();
 
+        // Create Full RLNC Encoder
         let encoder = Encoder::new(data, piece_count);
+        // Create Full RLNC Decoder
         let mut decoder = Decoder::new(encoder.get_piece_byte_len(), encoder.get_piece_count());
 
-        loop {
-            let mut coded_piece = encoder.code(&mut rng).expect("Generating new RLNC coded piece must not fail!");
+        // Reserve memory for holding coded pieces, which are to be used for recoding.
+        let num_pieces_to_use_for_recoding = piece_count / 2;
+        let mut coded_pieces_for_recoding = Vec::with_capacity(encoder.get_full_coded_piece_byte_len() * num_pieces_to_use_for_recoding);
+
+        // Generate some coded pieces, push them into Decoder and keep their copy so that they can be used for recoding.
+        (0..num_pieces_to_use_for_recoding).for_each(|_| {
+            let coded_piece = encoder.code(&mut rng).expect("Generating new RLNC coded piece must not fail!");
 
             match decoder.decode(&coded_piece) {
-                Ok(_) => {}
+                Ok(_) => coded_pieces_for_recoding.extend_from_slice(&coded_piece),
                 Err(e) => match e {
-                    RLNCError::ReceivedAllPieces => break,
-                    RLNCError::PieceNotUseful => continue,
+                    RLNCError::PieceNotUseful => {}
                     _ => panic!("Did not expect this error during decoding: {e}"),
                 },
             };
+        });
 
-            if decoder.is_already_decoded() {
-                break;
-            }
+        // Build a Recoder with coded pieces produced in previous phase.
+        //
+        // Now notice, these coded pieces are already consumed by the Decoder, but anyway we'll use RLNC Recoder to produce
+        // new pieces from previously consumed coded pieces. And those recoded pieces will all be useless, because the recoder will
+        // just produce new linear combination of existing coded pieces, and they can't be linearly independent from all coded pieces
+        // which were already seen by the Decoder.
+        let recoder = Recoder::new(coded_pieces_for_recoding, encoder.get_full_coded_piece_byte_len(), encoder.get_piece_count())
+            .expect("Must be able to build a Recoder");
 
-            make_linearly_dependent_piece(&mut coded_piece);
+        // Hence in following loop, decoding process won't progress, because all the recoded pieces will be useless.
+        let num_recoded_pieces_to_use = num_pieces_to_use_for_recoding * 2;
+        (0..num_recoded_pieces_to_use).for_each(|_| {
+            let coded_piece = recoder.recode(&mut rng).expect("Generating new recoded piece must not fail!");
+
             match decoder.decode(&coded_piece) {
                 Ok(_) => panic!("Decoding with linearly dependent coded piece must not succeed!"),
+                Err(e) => match e {
+                    RLNCError::PieceNotUseful => {}
+                    _ => panic!("Did not expect this error during this phase of decoding: {e}"),
+                },
+            };
+        });
+
+        // Finally, we can grab new coded pieces from directly the Encoder to finalize the decoding process.
+        while decoder.get_remaining_piece_count() > 0 {
+            let coded_piece = encoder.code(&mut rng).expect("Generating new RLNC coded piece must not fail!");
+
+            match decoder.decode(&coded_piece) {
+                Ok(_) => {}
                 Err(e) => match e {
                     RLNCError::PieceNotUseful => continue,
                     _ => panic!("Did not expect this error during decoding: {e}"),
