@@ -371,3 +371,176 @@ impl Decoder {
         self.useful_piece_count
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{Decoder, RLNCError};
+    use crate::full::encoder::Encoder;
+    use rand::Rng;
+
+    #[test]
+    fn test_decoder_new_invalid_inputs() {
+        // Test case 1: piece_byte_len is zero
+        let piece_byte_len_zero = 0;
+        let required_piece_count_non_zero = 10;
+
+        let result_piece_len_zero = Decoder::new(piece_byte_len_zero, required_piece_count_non_zero);
+        assert!(result_piece_len_zero.is_err());
+        assert_eq!(result_piece_len_zero.expect_err("Expected PieceLengthZero error"), RLNCError::PieceLengthZero);
+
+        // Test case 2: required_piece_count is zero
+        let piece_byte_len_non_zero = 10;
+        let required_piece_count_zero = 0;
+
+        let result_piece_count_zero = Decoder::new(piece_byte_len_non_zero, required_piece_count_zero);
+        assert!(result_piece_count_zero.is_err());
+        assert_eq!(result_piece_count_zero.expect_err("Expected PieceCountZero error"), RLNCError::PieceCountZero);
+
+        // Test case 3: Both piece_byte_len and required_piece_count are zero
+        let piece_byte_len_both_zero = 0;
+        let required_piece_count_both_zero = 0;
+
+        let result_both_zero = Decoder::new(piece_byte_len_both_zero, required_piece_count_both_zero);
+        assert!(result_both_zero.is_err());
+        assert_eq!(
+            result_both_zero.expect_err("Expected PieceLengthZero error for both zero inputs"),
+            RLNCError::PieceLengthZero
+        );
+
+        // Test case 4: Valid input
+        let piece_byte_len_valid = 10;
+        let required_piece_count_valid = 5;
+        let result_valid = Decoder::new(piece_byte_len_valid, required_piece_count_valid);
+        assert!(result_valid.is_ok());
+    }
+
+    #[test]
+    fn test_decoder_decode_invalid_piece_length() {
+        let mut rng = rand::rng();
+
+        let data_byte_len = 1024usize;
+        let piece_count = 32usize;
+        let data = (0..data_byte_len).map(|_| rng.random()).collect::<Vec<u8>>();
+        let encoder = Encoder::new(data, piece_count).expect("Failed to create Encoder for decode invalid length test");
+
+        let piece_byte_len = encoder.get_piece_byte_len();
+        let required_piece_count = encoder.get_piece_count();
+        let full_coded_piece_byte_len = encoder.get_full_coded_piece_byte_len();
+
+        let mut decoder = Decoder::new(piece_byte_len, required_piece_count).expect("Failed to create Decoder for decode invalid length test");
+
+        // Test case 1: Piece length is shorter than expected
+        let short_piece_len = full_coded_piece_byte_len - 1;
+        let short_coded_piece: Vec<u8> = (0..short_piece_len).map(|_| rng.random()).collect();
+        let result_short = decoder.decode(&short_coded_piece);
+        assert!(result_short.is_err());
+        assert_eq!(
+            result_short.expect_err("Expected InvalidPieceLength error for short piece"),
+            RLNCError::InvalidPieceLength
+        );
+
+        // Test case 2: Piece length is longer than expected
+        let long_piece_len = full_coded_piece_byte_len + 1;
+        let long_coded_piece: Vec<u8> = (0..long_piece_len).map(|_| rng.random()).collect();
+        let result_long = decoder.decode(&long_coded_piece);
+        assert!(result_long.is_err());
+        assert_eq!(
+            result_long.expect_err("Expected InvalidPieceLength error for long piece"),
+            RLNCError::InvalidPieceLength
+        );
+
+        // Test case 3: Piece length is zero
+        let zero_piece: Vec<u8> = Vec::new();
+        let result_zero = decoder.decode(&zero_piece);
+        assert!(result_zero.is_err());
+        assert_eq!(
+            result_zero.expect_err("Expected InvalidPieceLength error for zero-length piece"),
+            RLNCError::InvalidPieceLength
+        );
+
+        // Ensure decoder state is unchanged after invalid decode attempts
+        assert_eq!(decoder.get_received_piece_count(), 0);
+        assert_eq!(decoder.get_useful_piece_count(), 0);
+        assert_eq!(decoder.is_already_decoded(), false);
+
+        // Test case 4: Valid coded piece - check if state changes
+        let correct_coded_piece = encoder.code(&mut rng);
+        let result_correct = decoder.decode(&correct_coded_piece);
+        assert!(result_correct.is_ok() || matches!(result_correct, Err(RLNCError::PieceNotUseful)));
+
+        // After a valid decode attempt, received_piece_count must increase
+        assert_eq!(decoder.get_received_piece_count(), 1);
+
+        // If the piece was useful, useful_piece_count will be 1. Otherwise, it remains 0.
+        // Given the small piece_count in this test, it's very likely to be useful.
+        if result_correct.is_ok() {
+            assert_eq!(decoder.get_useful_piece_count(), 1);
+            assert_eq!(decoder.is_already_decoded(), false); // Unless piece_count was 1
+        } else {
+            assert_eq!(decoder.get_useful_piece_count(), 0);
+        }
+    }
+
+    #[test]
+    fn test_decoder_getters() {
+        let mut rng = rand::rng();
+
+        let data_byte_len = 1024usize;
+        let piece_count = 32usize;
+        let data = (0..data_byte_len).map(|_| rng.random()).collect::<Vec<u8>>();
+        let encoder = Encoder::new(data.clone(), piece_count).expect("Failed to create Encoder for getters test");
+
+        let piece_byte_len = encoder.get_piece_byte_len();
+        let required_piece_count = encoder.get_piece_count();
+        let full_coded_piece_byte_len = encoder.get_full_coded_piece_byte_len();
+
+        let mut decoder = Decoder::new(piece_byte_len, required_piece_count).expect("Failed to create Decoder for getters test");
+
+        assert_eq!(decoder.get_num_pieces_coded_together(), required_piece_count);
+        assert_eq!(decoder.get_piece_byte_len(), piece_byte_len);
+        assert_eq!(decoder.get_full_coded_piece_byte_len(), full_coded_piece_byte_len);
+        assert_eq!(decoder.get_received_piece_count(), 0);
+        assert_eq!(decoder.get_useful_piece_count(), 0);
+        assert_eq!(decoder.get_remaining_piece_count(), required_piece_count);
+        assert!(!decoder.is_already_decoded());
+
+        // Add some pieces and track useful ones
+        let num_pieces_to_decode_initially = required_piece_count / 2;
+        let mut expected_useful_pieces_after_initial = 0;
+
+        for _ in 0..num_pieces_to_decode_initially {
+            let coded_piece = encoder.code(&mut rng);
+            match decoder.decode(&coded_piece) {
+                Ok(_) => {
+                    expected_useful_pieces_after_initial += 1;
+                }
+                Err(RLNCError::PieceNotUseful) => {}
+                Err(e) => panic!("Unexpected error during initial decoding phase: {:?}", e),
+            }
+        }
+
+        assert_eq!(decoder.get_received_piece_count(), num_pieces_to_decode_initially);
+        assert_eq!(decoder.get_useful_piece_count(), expected_useful_pieces_after_initial);
+        assert_eq!(decoder.get_remaining_piece_count(), required_piece_count - expected_useful_pieces_after_initial);
+
+        // Add remaining pieces to complete decoding
+        let mut total_pieces_received = num_pieces_to_decode_initially;
+        while !decoder.is_already_decoded() {
+            let coded_piece = encoder.code(&mut rng);
+
+            match decoder.decode(&coded_piece) {
+                Ok(_) => {}
+                Err(RLNCError::PieceNotUseful) => {}
+                Err(RLNCError::ReceivedAllPieces) => break,
+                Err(e) => panic!("Unexpected error during final decoding phase: {:?}", e),
+            }
+
+            total_pieces_received += 1;
+        }
+
+        assert_eq!(decoder.get_useful_piece_count(), required_piece_count);
+        assert_eq!(decoder.get_remaining_piece_count(), 0);
+        assert!(decoder.is_already_decoded());
+        assert_eq!(decoder.get_received_piece_count(), total_pieces_received);
+    }
+}
