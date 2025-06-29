@@ -24,6 +24,10 @@ test: ## Run all tests
 test-wasm: ## Run all tests in WASM environment
 	$(BACKTRACE) cargo test --target wasm32-wasip1 --profile test-release
 
+.PHONY: coverage
+coverage: ## Generates HTML code coverage report, using `cargo-tarpaulin`
+	cargo tarpaulin -t 600 --profile test-release --out Html
+
 .PHONY: bench
 bench: ## Run all benchmarks
 	cargo bench --profile optimized

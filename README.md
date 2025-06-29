@@ -38,6 +38,29 @@ cargo install wasmtime-cli --locked
 make test-wasm
 ```
 
+### Code Coverage
+To generate a detailed code coverage report in HTML format, use [cargo-tarpaulin](https://github.com/xd009642/tarpaulin):
+
+```bash
+# Install cargo-tarpaulin if not already installed
+cargo install cargo-tarpaulin
+make coverage
+```
+
+```bash
+Coverage Results:
+|| Tested/Total Lines:
+|| src/common/errors.rs: 0/1
+|| src/common/gf256.rs: 11/13
+|| src/full/decoder.rs: 67/73
+|| src/full/encoder.rs: 31/33
+|| src/full/recoder.rs: 30/36
+||
+89.10% coverage, 139/156 lines covered
+```
+
+This will create an HTML coverage report at `tarpaulin-report.html` that you can open in your web browser to view detailed line-by-line coverage information for all source files.
+
 ```bash
 running 4 tests
 test common::gf256::test::prop_test_gf256_operations ... ok
@@ -474,7 +497,7 @@ To use `rlnc` in your Rust project, add it as a dependency in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rlnc = "0.2.0" # Use the latest version available
+rlnc = "=0.3.0" # Use the latest version available
 rand = { version = "=0.9.1" } # Required for random number generation
 ```
 
