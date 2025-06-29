@@ -57,18 +57,25 @@ impl Decoder {
     /// * `piece_byte_len` - The byte length of each original data piece.
     /// * `required_piece_count` - The minimum number of useful coded pieces
     ///   needed for decoding (equivalent to the number of original pieces).
-    pub fn new(piece_byte_len: usize, required_piece_count: usize) -> Decoder {
+    pub fn new(piece_byte_len: usize, required_piece_count: usize) -> Result<Decoder, RLNCError> {
+        if piece_byte_len == 0 {
+            return Err(RLNCError::PieceLengthZero);
+        }
+        if required_piece_count == 0 {
+            return Err(RLNCError::PieceCountZero);
+        }
+
         let full_coded_piece_byte_len = required_piece_count + piece_byte_len;
         let total_byte_len = required_piece_count * full_coded_piece_byte_len;
         let data = Vec::with_capacity(total_byte_len);
 
-        Decoder {
+        Ok(Decoder {
             data,
             piece_byte_len,
             required_piece_count,
             received_piece_count: 0,
             useful_piece_count: 0,
-        }
+        })
     }
 
     /// Decodes a single full coded piece and adds it to the decoder's matrix.
@@ -88,6 +95,9 @@ impl Decoder {
     pub fn decode(&mut self, full_coded_piece: &[u8]) -> Result<(), RLNCError> {
         if self.is_already_decoded() {
             return Err(RLNCError::ReceivedAllPieces);
+        }
+        if full_coded_piece.len() != self.get_full_coded_piece_byte_len() {
+            return Err(RLNCError::InvalidPieceLength);
         }
 
         let rank_before = self.rank();
