@@ -14,6 +14,8 @@ pub enum RLNCError {
 
     /// When there are not enough linearly independent pieces available to perform recoding.
     NotEnoughPiecesToRecode,
+    /// When the full coded piece byte length is less than or equal to the number of pieces coded together.
+    PieceLengthTooShort,
 
     /// When a received piece does not provide new linearly independent information.
     PieceNotUseful,
@@ -39,6 +41,7 @@ impl std::fmt::Display for RLNCError {
 
             // Recoder
             RLNCError::NotEnoughPiecesToRecode => write!(f, "Not enough pieces received to recode"),
+            RLNCError::PieceLengthTooShort => write!(f, "Piece length is too short"),
 
             // Decoder
             RLNCError::PieceNotUseful => write!(f, "Received piece is not useful"),
