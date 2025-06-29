@@ -105,7 +105,7 @@ fn encode(bencher: divan::Bencher, rlnc_config: &RLNCConfig) {
     let mut rng = rand::rng();
     let data = (0..rlnc_config.data_byte_len).map(|_| rng.random()).collect::<Vec<u8>>();
 
-    let encoder = Encoder::new(data, rlnc_config.piece_count);
+    let encoder = Encoder::new(data, rlnc_config.piece_count).expect("Failed to create RLNC encoder");
 
     bencher
         .counter(divan::counter::BytesCount::new(
