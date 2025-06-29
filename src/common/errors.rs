@@ -1,5 +1,5 @@
 /// Errors that can occur during RLNC (Random Linear Network Coding) encoding/ recoding/ decoding.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum RLNCError {
     /// When the coding vector's length does not match the expected dimension during encoding.
     CodingVectorLengthMismatch,
