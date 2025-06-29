@@ -5,6 +5,10 @@ pub enum RLNCError {
     CodingVectorLengthMismatch,
     /// When the data length does not match the expected block size during encoding.
     DataLengthMismatch,
+    /// When the piece count is zero.
+    PieceCountZero,
+    /// When the data length is zero.
+    DataLengthZero,
 
     /// When there are not enough linearly independent pieces available to perform recoding.
     NotEnoughPiecesToRecode,
@@ -25,6 +29,8 @@ impl std::fmt::Display for RLNCError {
             // Encoder
             RLNCError::CodingVectorLengthMismatch => write!(f, "Coding vector length mismatch"),
             RLNCError::DataLengthMismatch => write!(f, "Data length mismatch"),
+            RLNCError::PieceCountZero => write!(f, "Piece count is zero"),
+            RLNCError::DataLengthZero => write!(f, "Data length is zero"),
 
             // Recoder
             RLNCError::NotEnoughPiecesToRecode => write!(f, "Not enough pieces received to recode"),
