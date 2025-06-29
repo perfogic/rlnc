@@ -38,6 +38,17 @@ cargo install wasmtime-cli --locked
 make test-wasm
 ```
 
+### Code Coverage
+To generate a detailed code coverage report in HTML format, use [cargo-tarpaulin](https://github.com/xd009642/tarpaulin):
+
+```bash
+# Install cargo-tarpaulin if not already installed
+cargo install cargo-tarpaulin
+make coverage
+```
+
+This will create an HTML coverage report at `tarpaulin-report.html` that you can open in your web browser to view detailed line-by-line coverage information for all source files.
+
 ```bash
 running 4 tests
 test common::gf256::test::prop_test_gf256_operations ... ok
