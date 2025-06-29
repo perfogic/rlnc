@@ -57,6 +57,11 @@ impl Decoder {
     /// * `piece_byte_len` - The byte length of each original data piece.
     /// * `required_piece_count` - The minimum number of useful coded pieces
     ///   needed for decoding (equivalent to the number of original pieces).
+    ///
+    /// # Returns
+    /// Returns `Ok(Decoder)` on successful creation.
+    /// Returns `Err(RLNCError::PieceLengthZero)` if `piece_byte_len` is zero.
+    /// Returns `Err(RLNCError::PieceCountZero)` if `required_piece_count` is zero.
     pub fn new(piece_byte_len: usize, required_piece_count: usize) -> Result<Decoder, RLNCError> {
         if piece_byte_len == 0 {
             return Err(RLNCError::PieceLengthZero);
@@ -92,6 +97,7 @@ impl Decoder {
     /// Returns `Err(RLNCError::ReceivedAllPieces)` if decoding is already complete.
     /// Returns `Err(RLNCError::PieceNotUseful)` if the piece was linearly
     /// dependent on the already received useful pieces.
+    /// Returns `Err(RLNCError::InvalidPieceLength)` if the `full_coded_piece` has an unexpected length.
     pub fn decode(&mut self, full_coded_piece: &[u8]) -> Result<(), RLNCError> {
         if self.is_already_decoded() {
             return Err(RLNCError::ReceivedAllPieces);
