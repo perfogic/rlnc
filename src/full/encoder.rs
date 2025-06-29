@@ -4,7 +4,7 @@ use rand::Rng;
 
 /// Represents an RLNC encoder, responsible for dividing data into pieces and
 /// generating coded pieces based on random sampled coding vectors.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Encoder {
     data: Vec<u8>,
     piece_count: usize,

@@ -10,7 +10,7 @@ use rand::Rng;
 ///
 /// The `Recoder` stores the coding vectors and coded pieces from the input.
 /// Internally, it uses an `Encoder` initialized with the coded pieces.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Recoder {
     coding_vectors: Vec<Gf256>,
     encoder: Encoder,

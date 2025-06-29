@@ -5,7 +5,7 @@ use crate::{RLNCError, common::gf256::Gf256};
 ///
 /// This struct manages the received coded pieces and performs Gaussian
 /// elimination to recover the original data.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Decoder {
     /// Stores the coefficient matrix and coded data rows concatenated.
     /// Each row is a coded piece: `[coefficients | data_piece]`.
