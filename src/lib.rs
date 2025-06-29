@@ -93,7 +93,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! rlnc = "=0.2.0" # Use the latest version
+//! rlnc = "=0.3.0" # Use the latest version
 //! rand = "=0.9.1" # Required for random number generation
 //! ```
 //!
