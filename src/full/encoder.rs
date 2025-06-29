@@ -34,6 +34,13 @@ impl Encoder {
     /// Returns the `Encoder` or `RLNCError::DataLengthMismatch` if the data length is not a
     /// multiple of the piece count.
     pub(crate) fn without_padding(data: Vec<u8>, piece_count: usize) -> Result<Encoder, RLNCError> {
+        if data.len() == 0 {
+            return Err(RLNCError::DataLengthZero);
+        }
+        if piece_count == 0 {
+            return Err(RLNCError::PieceCountZero);
+        }
+
         let in_data_len = data.len();
         let piece_byte_len = in_data_len / piece_count;
         let computed_total_data_len = piece_byte_len * piece_count;
@@ -58,7 +65,14 @@ impl Encoder {
     /// at the end of the original data before zero padding.
     ///
     /// Returns the `Encoder`.
-    pub fn new(mut data: Vec<u8>, piece_count: usize) -> Encoder {
+    pub fn new(mut data: Vec<u8>, piece_count: usize) -> Result<Encoder, RLNCError> {
+        if data.len() == 0 {
+            return Err(RLNCError::DataLengthZero);
+        }
+        if piece_count == 0 {
+            return Err(RLNCError::PieceCountZero);
+        }
+
         let in_data_len = data.len();
         let boundary_marker_len = 1;
         let piece_byte_len = (in_data_len + boundary_marker_len).div_ceil(piece_count);
@@ -67,11 +81,11 @@ impl Encoder {
         data.resize(padded_data_len, 0);
         data[in_data_len] = BOUNDARY_MARKER;
 
-        Encoder {
+        Ok(Encoder {
             data,
             piece_count,
             piece_byte_len,
-        }
+        })
     }
 
     /// Encodes the data held by the encoder using a provided coding vector.
