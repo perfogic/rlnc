@@ -54,40 +54,37 @@
 //!     full::{decoder::Decoder, encoder::Encoder},
 //! };
 //!
-//! fn main() {
-//!     let mut rng = rand::rng();
+//! let mut rng = rand::rng();
 //!
-//!     // 1. Define original data parameters
-//!     let original_data_len = 1024 * 10; // 10 KB
-//!     let piece_count = 32; // Data will be split into 32 pieces
-//!     let original_data: Vec<u8> = (0..original_data_len).map(|_| rng.random()).collect();
-//!     let original_data_copy = original_data.clone();
+//! // 1. Define original data parameters
+//! let original_data_len = 1024 * 10; // 10 KB
+//! let piece_count = 32; // Data will be split into 32 pieces
+//! let original_data: Vec<u8> = (0..original_data_len).map(|_| rng.random()).collect();
+//! let original_data_copy = original_data.clone();
 //!
-//!     // 2. Initialize the Encoder
-//!     let encoder = Encoder::new(original_data, piece_count).expect("Failed to create RLNC encoder");
+//! // 2. Initialize the Encoder
+//! let encoder = Encoder::new(original_data, piece_count).expect("Failed to create RLNC encoder");
 //!
-//!     // 3. Initialize the Decoder
-//!     let mut decoder = Decoder::new(encoder.get_piece_byte_len(), encoder.get_piece_count()).expect("Failed to create RLNC decoder");
+//! // 3. Initialize the Decoder
+//! let mut decoder = Decoder::new(encoder.get_piece_byte_len(), encoder.get_piece_count()).expect("Failed to create RLNC decoder");
 //!
-//!     // 4. Generate coded pieces and feed them to the decoder until decoding is complete
-//!     while !decoder.is_already_decoded() {
-//!         let coded_piece = encoder.code(&mut rng);
-//!
-//!         match decoder.decode(&coded_piece) {
-//!             Ok(_) => {}, // Piece was useful
-//!             Err(RLNCError::PieceNotUseful) => {}, // Piece was not useful (linearly dependent)
-//!             Err(RLNCError::ReceivedAllPieces) => break, // Already decoded
-//!             Err(e) => panic!("Unexpected error during decoding: {e:?}"),
-//!         }
+//! // 4. Generate coded pieces and feed them to the decoder until decoding is complete
+//! while !decoder.is_already_decoded() {
+//!     let coded_piece = encoder.code(&mut rng);
+//!     match decoder.decode(&coded_piece) {
+//!         Ok(_) => {}, // Piece was useful
+//!         Err(RLNCError::PieceNotUseful) => {}, // Piece was not useful (linearly dependent)
+//!         Err(RLNCError::ReceivedAllPieces) => break, // Already decoded
+//!         Err(e) => panic!("Unexpected error during decoding: {e:?}"),
 //!     }
-//!
-//!     // 5. Retrieve the decoded data
-//!     let decoded_data = decoder.get_decoded_data().expect("Failed to retrieve decoded data even after all pieces are received");
-//!
-//!     // 6. Verify that the decoded data matches the original data
-//!     assert_eq!(original_data_copy, decoded_data);
-//!     println!("RLNC workflow completed successfully! Original data matches decoded data.");
 //! }
+//!
+//! // 5. Retrieve the decoded data
+//! let decoded_data = decoder.get_decoded_data().expect("Failed to retrieve decoded data even after all pieces are received");
+//!
+//! // 6. Verify that the decoded data matches the original data
+//! assert_eq!(original_data_copy, decoded_data);
+//! println!("RLNC workflow completed successfully! Original data matches decoded data.");
 //! ```
 //!
 //! ## Installation
