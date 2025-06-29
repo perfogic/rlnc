@@ -58,17 +58,29 @@ impl Recoder {
     ///   linearly combined to create each coded piece. This is also the length
     ///   of the coding vector prepended to each full coded piece.
     ///
-    /// # Errors
-    ///
-    /// Returns `RLNCError::NotEnoughPiecesToRecode` if the input `data` is empty
+    /// # Returns
+    /// Returns `Ok(Recoder)` on successful creation.
+    /// Returns `Err(RLNCError::NotEnoughPiecesToRecode)` if the input `data` is empty
     /// or does not contain at least one full coded piece.
+    /// Returns `Err(RLNCError::PieceLengthZero)` if `full_coded_piece_byte_len` is zero.
+    /// Returns `Err(RLNCError::PieceCountZero)` if `num_pieces_coded_together` is zero.
+    /// Returns `Err(RLNCError::PieceLengthTooShort)` if `full_coded_piece_byte_len` is not greater than `num_pieces_coded_together`.
     pub fn new(data: Vec<u8>, full_coded_piece_byte_len: usize, num_pieces_coded_together: usize) -> Result<Recoder, RLNCError> {
-        let piece_byte_len = full_coded_piece_byte_len - num_pieces_coded_together;
-        let num_pieces_received = data.len() / full_coded_piece_byte_len;
-
-        if num_pieces_received == 0 {
+        if data.len() == 0 {
             return Err(RLNCError::NotEnoughPiecesToRecode);
         }
+        if full_coded_piece_byte_len == 0 {
+            return Err(RLNCError::PieceLengthZero);
+        }
+        if num_pieces_coded_together == 0 {
+            return Err(RLNCError::PieceCountZero);
+        }
+        if full_coded_piece_byte_len <= num_pieces_coded_together {
+            return Err(RLNCError::PieceLengthTooShort);
+        }
+
+        let piece_byte_len = full_coded_piece_byte_len - num_pieces_coded_together;
+        let num_pieces_received = data.len() / full_coded_piece_byte_len;
 
         let mut coding_vectors = Vec::with_capacity(num_pieces_received * num_pieces_coded_together);
         let mut coded_pieces = Vec::with_capacity(num_pieces_received * piece_byte_len);
@@ -81,7 +93,7 @@ impl Recoder {
             coded_pieces.extend_from_slice(coded_piece);
         });
 
-        let encoder = Encoder::without_padding(coded_pieces, num_pieces_received)?;
+        let encoder = unsafe { Encoder::without_padding(coded_pieces, num_pieces_received).unwrap_unchecked() };
 
         Ok(Recoder {
             coding_vectors,
@@ -109,15 +121,10 @@ impl Recoder {
     ///
     /// # Returns
     ///
-    /// Returns a `Result` containing a `Vec<u8>` representing the new coded
-    /// piece prepended with its source coding vector on success.
-    ///
-    /// # Errors
-    ///
-    /// Returns an `RLNCError` if the internal `Encoder` fails to generate
-    /// the coded piece (e.g., if the recoding vector is somehow invalid,
-    /// though this is unlikely with a random vector).
-    pub fn recode<R: Rng + ?Sized>(&self, rng: &mut R) -> Result<Vec<u8>, RLNCError> {
+    /// Returns a `Vec<u8>` representing the new coded piece prepended with its
+    /// source coding vector. The length of the returned vector is
+    /// `self.get_full_coded_piece_byte_len()`.
+    pub fn recode<R: Rng + ?Sized>(&self, rng: &mut R) -> Vec<u8> {
         let random_recoding_vector = (0..self.num_pieces_received).map(|_| rng.random()).collect::<Vec<Gf256>>();
 
         // Compute the resulting coding vector for the original source pieces
@@ -135,7 +142,7 @@ impl Recoder {
             })
             .collect::<Vec<u8>>();
 
-        let full_coded_piece = self.encoder.code_with_coding_vector(&random_recoding_vector)?;
+        let full_coded_piece = unsafe { self.encoder.code_with_coding_vector(&random_recoding_vector).unwrap_unchecked() };
         let coded_piece = &full_coded_piece[self.num_pieces_received..];
 
         let mut full_recoded_piece = vec![0u8; self.full_coded_piece_byte_len];
@@ -143,6 +150,6 @@ impl Recoder {
         full_recoded_piece[..self.num_pieces_coded_together].copy_from_slice(&computed_coding_vector);
         full_recoded_piece[self.num_pieces_coded_together..].copy_from_slice(coded_piece);
 
-        Ok(full_recoded_piece)
+        full_recoded_piece
     }
 }
