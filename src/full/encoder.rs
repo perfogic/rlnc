@@ -31,7 +31,10 @@ impl Encoder {
     /// This is suitable if the input data length is already a multiple of the
     /// desired piece count. This interface is used by Recoder.
     ///
-    /// Returns the `Encoder` or `RLNCError::DataLengthMismatch` if the data length is not a
+    /// Returns `Ok(Encoder)` on success.
+    /// Returns `Err(RLNCError::DataLengthZero)` if `data` is empty.
+    /// Returns `Err(RLNCError::PieceCountZero)` if `piece_count` is zero.
+    /// Returns `Err(RLNCError::DataLengthMismatch)` if the data length is not a
     /// multiple of the piece count.
     pub(crate) fn without_padding(data: Vec<u8>, piece_count: usize) -> Result<Encoder, RLNCError> {
         if data.len() == 0 {
@@ -64,7 +67,10 @@ impl Encoder {
     /// `piece_count` pieces. A boundary marker (`BOUNDARY_MARKER`) is placed
     /// at the end of the original data before zero padding.
     ///
-    /// Returns the `Encoder`.
+    /// # Returns
+    /// Returns `Ok(Encoder)` on success.
+    /// Returns `Err(RLNCError::DataLengthZero)` if `data` is empty.
+    /// Returns `Err(RLNCError::PieceCountZero)` if `piece_count` is zero.
     pub fn new(mut data: Vec<u8>, piece_count: usize) -> Result<Encoder, RLNCError> {
         if data.len() == 0 {
             return Err(RLNCError::DataLengthZero);
@@ -135,9 +141,8 @@ impl Encoder {
     /// Calls `code_with_coding_vector` internally.
     ///
     /// Returns the coded piece prefixed by the random coding vector.
-    pub fn code<R: Rng + ?Sized>(&self, rng: &mut R) -> Result<Vec<u8>, RLNCError> {
+    pub fn code<R: Rng + ?Sized>(&self, rng: &mut R) -> Vec<u8> {
         let random_coding_vector = (0..self.piece_count).map(|_| rng.random()).collect::<Vec<Gf256>>();
-
-        self.code_with_coding_vector(&random_coding_vector)
+        unsafe { self.code_with_coding_vector(&random_coding_vector).unwrap_unchecked() }
     }
 }
