@@ -461,7 +461,7 @@ mod tests {
         // Ensure decoder state is unchanged after invalid decode attempts
         assert_eq!(decoder.get_received_piece_count(), 0);
         assert_eq!(decoder.get_useful_piece_count(), 0);
-        assert_eq!(decoder.is_already_decoded(), false);
+        assert!(!decoder.is_already_decoded());
 
         // Test case 4: Valid coded piece - check if state changes
         let correct_coded_piece = encoder.code(&mut rng);
@@ -475,7 +475,7 @@ mod tests {
         // Given the small piece_count in this test, it's very likely to be useful.
         if result_correct.is_ok() {
             assert_eq!(decoder.get_useful_piece_count(), 1);
-            assert_eq!(decoder.is_already_decoded(), false); // Unless piece_count was 1
+            assert!(!decoder.is_already_decoded()); // Unless piece_count was 1
         } else {
             assert_eq!(decoder.get_useful_piece_count(), 0);
         }
@@ -515,7 +515,7 @@ mod tests {
                     expected_useful_pieces_after_initial += 1;
                 }
                 Err(RLNCError::PieceNotUseful) => {}
-                Err(e) => panic!("Unexpected error during initial decoding phase: {:?}", e),
+                Err(e) => panic!("Unexpected error during initial decoding phase: {e:?}"),
             }
         }
 
@@ -532,7 +532,7 @@ mod tests {
                 Ok(_) => {}
                 Err(RLNCError::PieceNotUseful) => {}
                 Err(RLNCError::ReceivedAllPieces) => break,
-                Err(e) => panic!("Unexpected error during final decoding phase: {:?}", e),
+                Err(e) => panic!("Unexpected error during final decoding phase: {e:?}"),
             }
 
             total_pieces_received += 1;

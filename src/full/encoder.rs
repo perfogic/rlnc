@@ -37,7 +37,7 @@ impl Encoder {
     /// Returns `Err(RLNCError::DataLengthMismatch)` if the data length is not a
     /// multiple of the piece count.
     pub(crate) fn without_padding(data: Vec<u8>, piece_count: usize) -> Result<Encoder, RLNCError> {
-        if data.len() == 0 {
+        if data.is_empty() {
             return Err(RLNCError::DataLengthZero);
         }
         if piece_count == 0 {
@@ -72,7 +72,7 @@ impl Encoder {
     /// Returns `Err(RLNCError::DataLengthZero)` if `data` is empty.
     /// Returns `Err(RLNCError::PieceCountZero)` if `piece_count` is zero.
     pub fn new(mut data: Vec<u8>, piece_count: usize) -> Result<Encoder, RLNCError> {
-        if data.len() == 0 {
+        if data.is_empty() {
             return Err(RLNCError::DataLengthZero);
         }
         if piece_count == 0 {

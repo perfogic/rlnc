@@ -66,7 +66,7 @@ impl Recoder {
     /// Returns `Err(RLNCError::PieceCountZero)` if `num_pieces_coded_together` is zero.
     /// Returns `Err(RLNCError::PieceLengthTooShort)` if `full_coded_piece_byte_len` is not greater than `num_pieces_coded_together`.
     pub fn new(data: Vec<u8>, full_coded_piece_byte_len: usize, num_pieces_coded_together: usize) -> Result<Recoder, RLNCError> {
-        if data.len() == 0 {
+        if data.is_empty() {
             return Err(RLNCError::NotEnoughPiecesToRecode);
         }
         if full_coded_piece_byte_len == 0 {
