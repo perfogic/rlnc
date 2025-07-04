@@ -2,6 +2,9 @@ use super::consts::BOUNDARY_MARKER;
 use crate::{RLNCError, common::gf256::Gf256};
 use rand::Rng;
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 /// Represents an RLNC encoder, responsible for dividing data into pieces and
 /// generating coded pieces based on random sampled coding vectors.
 #[derive(Clone, Debug)]
@@ -102,32 +105,71 @@ impl Encoder {
     ///
     /// Returns `RLNCError::CodingVectorLengthMismatch` if the length of the
     /// provided `coding_vector` does not match `self.piece_count`.
-    pub fn code_with_coding_vector(&self, coding_vector: &[Gf256]) -> Result<Vec<u8>, RLNCError> {
+    #[cfg(not(feature = "parallel"))]
+    pub fn code_with_coding_vector(&self, coding_vector: &[u8]) -> Result<Vec<u8>, RLNCError> {
+        if coding_vector.len() != self.piece_count {
+            return Err(RLNCError::CodingVectorLengthMismatch);
+        }
+
+        let mut full_coded_piece = vec![0u8; self.get_full_coded_piece_byte_len()];
+        full_coded_piece[..self.piece_count].copy_from_slice(coding_vector);
+
+        let coded_piece = &mut full_coded_piece[self.piece_count..];
+        self.data
+            .chunks_exact(self.piece_byte_len)
+            .zip(coding_vector)
+            .map(|(piece, &random_symbol)| piece.iter().map(move |&symbol| (Gf256::new(symbol) * Gf256::new(random_symbol)).get()))
+            .for_each(|cur| {
+                coded_piece.iter_mut().zip(cur).for_each(|(a, b)| {
+                    *a = (Gf256::new(*a) + Gf256::new(b)).get();
+                });
+            });
+
+        Ok(full_coded_piece)
+    }
+
+    /// Encodes the data held by the encoder using a provided coding vector.
+    ///
+    /// The resulting coded piece is returned as a `Vec<u8>`, prefixed by the
+    /// coding vector itself (as `u8` values). The total length of the returned
+    /// vector is `self.get_complete_coded_piece_byte_len()`.
+    ///
+    /// Returns `RLNCError::CodingVectorLengthMismatch` if the length of the
+    /// provided `coding_vector` does not match `self.piece_count`.
+    #[cfg(feature = "parallel")]
+    pub fn code_with_coding_vector(&self, coding_vector: &[u8]) -> Result<Vec<u8>, RLNCError> {
         if coding_vector.len() != self.piece_count {
             return Err(RLNCError::CodingVectorLengthMismatch);
         }
 
         let coded_piece = self
             .data
-            .chunks_exact(self.piece_byte_len)
+            .par_chunks_exact(self.piece_byte_len)
             .zip(coding_vector)
-            .map(|(piece, &random_symbol)| piece.iter().map(|&symbol| Gf256::new(symbol) * random_symbol).collect::<Vec<Gf256>>())
-            .fold(vec![Gf256::default(); self.piece_byte_len], |mut acc, cur| {
-                acc.iter_mut().zip(cur).for_each(|(a, b)| {
-                    *a += b;
-                });
+            .map(|(piece, &random_symbol)| piece.iter().map(move |&symbol| (Gf256::new(symbol) * Gf256::new(random_symbol)).get()))
+            .fold(
+                || vec![0u8; self.piece_byte_len],
+                |mut acc, cur| {
+                    acc.iter_mut().zip(cur).for_each(|(a, b)| {
+                        *a = (Gf256::new(*a) + Gf256::new(b)).get();
+                    });
 
-                acc
-            })
-            .iter()
-            .map(|symbol| symbol.get())
-            .collect::<Vec<u8>>();
+                    acc
+                },
+            )
+            .reduce(
+                || vec![0u8; self.piece_byte_len],
+                |mut acc, cur| {
+                    acc.iter_mut().zip(cur).for_each(|(a, b)| {
+                        *a ^= b;
+                    });
+
+                    acc
+                },
+            );
 
         let mut full_coded_piece = vec![0u8; self.get_full_coded_piece_byte_len()];
-
-        full_coded_piece[..self.piece_count].iter_mut().enumerate().for_each(|(idx, symbol)| {
-            *symbol = coding_vector[idx].get();
-        });
+        full_coded_piece[..self.piece_count].copy_from_slice(coding_vector);
         full_coded_piece[self.piece_count..].copy_from_slice(&coded_piece);
 
         Ok(full_coded_piece)
@@ -142,14 +184,14 @@ impl Encoder {
     ///
     /// Returns the coded piece prefixed by the random coding vector.
     pub fn code<R: Rng + ?Sized>(&self, rng: &mut R) -> Vec<u8> {
-        let random_coding_vector = (0..self.piece_count).map(|_| rng.random()).collect::<Vec<Gf256>>();
+        let random_coding_vector = (0..self.piece_count).map(|_| rng.random()).collect::<Vec<u8>>();
         unsafe { self.code_with_coding_vector(&random_coding_vector).unwrap_unchecked() }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Encoder, Gf256, RLNCError};
+    use super::{Encoder, RLNCError};
     use rand::Rng;
 
     #[test]
@@ -246,7 +288,7 @@ mod tests {
 
         // Test case 1: Coding vector is shorter than expected
         let short_coding_vector_len = piece_count - 1;
-        let short_coding_vector: Vec<Gf256> = (0..short_coding_vector_len).map(|_| rng.random()).collect();
+        let short_coding_vector: Vec<u8> = (0..short_coding_vector_len).map(|_| rng.random()).collect();
         let result_short = encoder.code_with_coding_vector(&short_coding_vector);
 
         assert!(result_short.is_err());
@@ -257,7 +299,7 @@ mod tests {
 
         // Test case 2: Coding vector is longer than expected
         let long_coding_vector_len = piece_count + 1;
-        let long_coding_vector: Vec<Gf256> = (0..long_coding_vector_len).map(|_| rng.random()).collect();
+        let long_coding_vector: Vec<u8> = (0..long_coding_vector_len).map(|_| rng.random()).collect();
         let result_long = encoder.code_with_coding_vector(&long_coding_vector);
 
         assert!(result_long.is_err());
@@ -267,7 +309,7 @@ mod tests {
         );
 
         // Test case 3: Empty coding vector
-        let empty_coding_vector: Vec<Gf256> = Vec::new();
+        let empty_coding_vector: Vec<u8> = Vec::new();
         let result_empty = encoder.code_with_coding_vector(&empty_coding_vector);
 
         assert!(result_empty.is_err());
@@ -277,7 +319,7 @@ mod tests {
         );
 
         // Test case 4: Valid coding vector
-        let valid_coding_vector: Vec<Gf256> = (0..piece_count).map(|_| rng.random()).collect();
+        let valid_coding_vector: Vec<u8> = (0..piece_count).map(|_| rng.random()).collect();
         let result_valid = encoder.code_with_coding_vector(&valid_coding_vector);
 
         assert!(result_valid.is_ok());

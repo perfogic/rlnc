@@ -1,6 +1,6 @@
 [package]
 name = "rlnc"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2024"
 resolver = "3"
 rust-version = "1.85.0"
@@ -21,9 +21,13 @@ categories = ["network-programming", "encoding", "algorithms"]
 
 [dependencies]
 rand = "=0.9.1"
+rayon = { version = "=1.10.0", optional = true }
 
 [dev-dependencies]
 divan = "=0.1.21"
+
+[features]
+parallel = ["dep:rayon"]
 
 [[bench]]
 name = "full_rlnc_encoder"

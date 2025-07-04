@@ -125,7 +125,7 @@ impl Recoder {
     /// source coding vector. The length of the returned vector is
     /// `self.get_full_coded_piece_byte_len()`.
     pub fn recode<R: Rng + ?Sized>(&self, rng: &mut R) -> Vec<u8> {
-        let random_recoding_vector = (0..self.num_pieces_received).map(|_| rng.random()).collect::<Vec<Gf256>>();
+        let random_recoding_vector = (0..self.num_pieces_received).map(|_| rng.random()).collect::<Vec<u8>>();
 
         // Compute the resulting coding vector for the original source pieces
         // by multiplying the random sampled recoding vector by the matrix of received coding vectors.
@@ -136,7 +136,7 @@ impl Recoder {
                     .enumerate()
                     .fold(Gf256::default(), |acc, (recoding_vec_idx, &cur)| {
                         let row_begins_at = recoding_vec_idx * self.num_pieces_coded_together;
-                        acc + cur * self.coding_vectors[row_begins_at + coeff_idx]
+                        acc + Gf256::new(cur) * self.coding_vectors[row_begins_at + coeff_idx]
                     })
                     .get()
             })
