@@ -19,10 +19,11 @@ format: ## Formats source tree
 .PHONY: test
 test: ## Run all tests
 	$(BACKTRACE) cargo test --profile test-release
+	$(BACKTRACE) cargo test --profile test-release --features parallel
 
 .PHONY: test-wasm
 test-wasm: ## Run all tests in WASM environment
-	$(BACKTRACE) cargo test --target wasm32-wasip1 --profile test-release
+	$(BACKTRACE) cargo test --target wasm32-wasip1 --profile test-release --no-default-features
 
 .PHONY: coverage
 coverage: ## Generates HTML code coverage report, using `cargo-tarpaulin`
@@ -31,6 +32,7 @@ coverage: ## Generates HTML code coverage report, using `cargo-tarpaulin`
 .PHONY: bench
 bench: ## Run all benchmarks
 	cargo bench --profile optimized
+	cargo bench --profile optimized --features parallel
 
 .PHONY: clean
 clean: ## Removes cargo target directory
@@ -39,3 +41,5 @@ clean: ## Removes cargo target directory
 .PHONY: example
 example: ## Runs the Full RLNC example program
 	cargo run --example full_rlnc
+	cargo run --example full_rlnc --features parallel
+	cargo run --example full_rlnc --target wasm32-wasip1 --no-default-features
