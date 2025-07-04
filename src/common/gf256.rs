@@ -45,28 +45,28 @@ pub struct Gf256 {
 
 impl Gf256 {
     /// Creates a new Gf256 element from a u8 value.
-    pub fn new(val: u8) -> Self {
+    pub const fn new(val: u8) -> Self {
         Gf256 { val }
     }
 
     /// Returns the raw u8 value of the Gf256 element.
-    pub fn get(&self) -> u8 {
+    pub const fn get(&self) -> u8 {
         self.val
     }
 
     /// Returns the additive identity element (0).
-    pub fn zero() -> Self {
-        Gf256::default()
+    pub const fn zero() -> Self {
+        Gf256::new(0)
     }
 
     /// Returns the multiplicative identity element (1).
-    pub fn one() -> Self {
-        Gf256 { val: 1 }
+    pub const fn one() -> Self {
+        Gf256::new(1)
     }
 
     /// Returns primitive element x, for GF(2^8) field with irreducible polynomial x^8 + x^4 + x^3 + x^2 + 1.
-    pub fn primitive_element() -> Self {
-        Gf256 { val: 2 }
+    pub const fn primitive_element() -> Self {
+        Gf256::new(2)
     }
 
     /// Computes the multiplicative inverse of the element. Returns `None` for the zero element.
