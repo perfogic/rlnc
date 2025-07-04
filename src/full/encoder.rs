@@ -2,6 +2,9 @@ use super::consts::BOUNDARY_MARKER;
 use crate::{RLNCError, common::gf256::Gf256};
 use rand::Rng;
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 /// Represents an RLNC encoder, responsible for dividing data into pieces and
 /// generating coded pieces based on random sampled coding vectors.
 #[derive(Clone, Debug)]
@@ -125,11 +128,48 @@ impl Encoder {
         Ok(full_coded_piece)
     }
 
-        let mut full_coded_piece = vec![0u8; self.get_full_coded_piece_byte_len()];
+    /// Encodes the data held by the encoder using a provided coding vector.
+    ///
+    /// The resulting coded piece is returned as a `Vec<u8>`, prefixed by the
+    /// coding vector itself (as `u8` values). The total length of the returned
+    /// vector is `self.get_complete_coded_piece_byte_len()`.
+    ///
+    /// Returns `RLNCError::CodingVectorLengthMismatch` if the length of the
+    /// provided `coding_vector` does not match `self.piece_count`.
+    #[cfg(feature = "parallel")]
+    pub fn code_with_coding_vector(&self, coding_vector: &[u8]) -> Result<Vec<u8>, RLNCError> {
+        if coding_vector.len() != self.piece_count {
+            return Err(RLNCError::CodingVectorLengthMismatch);
+        }
 
-        full_coded_piece[..self.piece_count].iter_mut().enumerate().for_each(|(idx, symbol)| {
-            *symbol = coding_vector[idx].get();
-        });
+        let coded_piece = self
+            .data
+            .par_chunks_exact(self.piece_byte_len)
+            .zip(coding_vector)
+            .map(|(piece, &random_symbol)| piece.iter().map(move |&symbol| (Gf256::new(symbol) * Gf256::new(random_symbol)).get()))
+            .fold(
+                || vec![0u8; self.piece_byte_len],
+                |mut acc, cur| {
+                    acc.iter_mut().zip(cur).for_each(|(a, b)| {
+                        *a = (Gf256::new(*a) + Gf256::new(b)).get();
+                    });
+
+                    acc
+                },
+            )
+            .reduce(
+                || vec![0u8; self.piece_byte_len],
+                |mut acc, cur| {
+                    acc.iter_mut().zip(cur).for_each(|(a, b)| {
+                        *a ^= b;
+                    });
+
+                    acc
+                },
+            );
+
+        let mut full_coded_piece = vec![0u8; self.get_full_coded_piece_byte_len()];
+        full_coded_piece[..self.piece_count].copy_from_slice(coding_vector);
         full_coded_piece[self.piece_count..].copy_from_slice(&coded_piece);
 
         Ok(full_coded_piece)
