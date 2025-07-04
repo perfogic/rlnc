@@ -51,12 +51,12 @@ make coverage
 Coverage Results:
 || Tested/Total Lines:
 || src/common/errors.rs: 0/1
-|| src/common/gf256.rs: 11/13
+|| src/common/gf256.rs: 10/11
 || src/full/decoder.rs: 67/73
-|| src/full/encoder.rs: 31/33
+|| src/full/encoder.rs: 29/31
 || src/full/recoder.rs: 30/36
-||
-89.10% coverage, 139/156 lines covered
+|| 
+89.47% coverage, 136/152 lines covered
 ```
 
 This will create an HTML coverage report at `tarpaulin-report.html` that you can open in your web browser to view detailed line-by-line coverage information for all source files.
