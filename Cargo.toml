@@ -1,6 +1,6 @@
 [package]
 name = "rlnc"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2024"
 resolver = "3"
 rust-version = "1.85.0"
@@ -8,7 +8,7 @@ authors = ["Anjan Roy <hello@itzmeanjan.in>"]
 description = "Random Linear Network Coding"
 readme = "README.md"
 repository = "https://github.com/itzmeanjan/rlnc.git"
-license = "MPL-2.0"
+license = "BSD-3-Clause"
 keywords = [
     "rlnc",
     "network-coding",
