@@ -645,10 +645,16 @@ fn gf256_inplace_mul_vec_by_scalar(vec: &mut [u8], scalar: u8) {
 }
 
 /// Given a byte array of arbitrary length, this function can be used to multiply each
-/// byte element with a specific scalar, over GF(2^8), returning resulting vector.
+/// byte element with a single specific scalar, over GF(2^8), returning resulting vector.
 ///
 /// In case this function is running on `x86_64` target and target has `ssse3` feature, it can use
 /// lookup-table assisted SIMD multiplication, inspired from https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1029-L1037.
+///
+/// When targeting `x86_64` CPU with `ssse3` feature, ensure that you build with
+/// `RUSTFLAGS="-C target-cpu=native -C target-feature=+ssse3" cargo run ...` to enjoy
+/// full benefits of compiler optimization.
+///
+/// I originally discovered this technique in https://www.snia.org/sites/default/files/files2/files2/SDC2013/presentations/NewThinking/EthanMiller_Screaming_Fast_Galois_Field%20Arithmetic_SIMD%20Instructions.pdf.
 pub fn gf256_mul_vec_by_scalar(vec: &[u8], scalar: u8) -> Vec<u8> {
     let mut result = vec.to_vec();
     gf256_inplace_mul_vec_by_scalar(&mut result, scalar);
