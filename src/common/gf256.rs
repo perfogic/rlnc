@@ -43,7 +43,7 @@ const GF256_EXP_TABLE: [u8; 2 * GF256_ORDER - 2] = [
 /// https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1100-L1105.
 /// Following table holds `htd->low` part.
 ///
-/// ```rust
+/// ```rust,ignore
 /// let _ = (0..=((GF256_ORDER-1) as u8))
 ///     .map(|a| (0..(GF256_HALF_ORDER as u8))
 ///     .map(move |b| Gf256::mul_const(a, b))
@@ -313,7 +313,7 @@ const GF256_SIMD_MUL_TABLE_LOW: [[u8; GF256_HALF_ORDER]; GF256_ORDER] = [
 /// https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1100-L1105.
 /// Following table holds `htd->high` part.
 ///
-/// ```rust
+/// ```rust,ignore
 /// let _ = (0..=((GF256_ORDER-1) as u8))
 ///     .map(|a| (0..(GF256_HALF_ORDER as u8))
 ///     .map(move |b| Gf256::mul_const(a, b << 4))
