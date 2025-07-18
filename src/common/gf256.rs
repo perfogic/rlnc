@@ -579,12 +579,7 @@ const GF256_SIMD_MUL_TABLE_HIGH: [[u8; GF256_HALF_ORDER]; GF256_ORDER] = [
     [0, 75, 150, 221, 49, 122, 167, 236, 98, 41, 244, 191, 83, 24, 197, 142],
 ];
 
-/// Given a byte array of arbitrary length, this function can be used to multiply each
-/// byte element with a specific scalar, over GF(2^8).
-///
-/// In case this function is running on x86_64 and it has `ssse3` feature, it can use
-/// lookup-table assisted SIMD multiplication, inspired from https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1029-L1037.
-pub fn gf256_inplace_mul_vec_by_scalar(vec: &mut [u8], scalar: u8) {
+fn gf256_inplace_mul_vec_by_scalar(vec: &mut [u8], scalar: u8) {
     if vec.is_empty() {
         return;
     }
@@ -647,6 +642,17 @@ pub fn gf256_inplace_mul_vec_by_scalar(vec: &mut [u8], scalar: u8) {
             *src_symbol = Gf256::mul_const(*src_symbol, scalar);
         });
     }
+}
+
+/// Given a byte array of arbitrary length, this function can be used to multiply each
+/// byte element with a specific scalar, over GF(2^8), returning resulting vector.
+///
+/// In case this function is running on `x86_64` target and target has `ssse3` feature, it can use
+/// lookup-table assisted SIMD multiplication, inspired from https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1029-L1037.
+pub fn gf256_mul_vec_by_scalar(vec: &[u8], scalar: u8) -> Vec<u8> {
+    let mut result = vec.to_vec();
+    gf256_inplace_mul_vec_by_scalar(&mut result, scalar);
+    result
 }
 
 /// Gf(2^8) wrapper type.

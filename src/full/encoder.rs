@@ -1,5 +1,8 @@
 use super::consts::BOUNDARY_MARKER;
-use crate::{RLNCError, common::gf256::Gf256};
+use crate::{
+    RLNCError,
+    common::gf256::{Gf256, gf256_mul_vec_by_scalar},
+};
 use rand::Rng;
 
 #[cfg(feature = "parallel")]
@@ -118,7 +121,7 @@ impl Encoder {
         self.data
             .chunks_exact(self.piece_byte_len)
             .zip(coding_vector)
-            .map(|(piece, &random_symbol)| piece.iter().map(move |&symbol| (Gf256::new(symbol) * Gf256::new(random_symbol)).get()))
+            .map(|(piece, &random_symbol)| gf256_mul_vec_by_scalar(piece, random_symbol))
             .for_each(|cur| {
                 coded_piece.iter_mut().zip(cur).for_each(|(a, b)| {
                     *a = (Gf256::new(*a) + Gf256::new(b)).get();
