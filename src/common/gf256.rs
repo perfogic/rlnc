@@ -69,9 +69,21 @@ impl Gf256 {
         Gf256::new(2)
     }
 
+    /// Compile-time executable multiplication of two bytes, over GF(2^8).
+    pub const fn mul_const(a: u8, b: u8) -> u8 {
+        if a == 0 || b == 0 {
+            return 0;
+        }
+
+        let l = GF256_LOG_TABLE[a as usize] as usize;
+        let r = GF256_LOG_TABLE[b as usize] as usize;
+
+        GF256_EXP_TABLE[l + r]
+    }
+
     /// Computes the multiplicative inverse of the element. Returns `None` for the zero element.
-    pub fn inv(self) -> Option<Self> {
-        if self == Self::zero() {
+    pub const fn inv(self) -> Option<Self> {
+        if self.val == 0 {
             return None;
         }
 
@@ -123,14 +135,9 @@ impl Mul for Gf256 {
 
     /// Performs multiplication of two Gf256 elements using logarithm and exponentiation tables.
     fn mul(self, rhs: Self) -> Self::Output {
-        if self == Self::zero() || rhs == Self::zero() {
-            return Self::zero();
+        Gf256 {
+            val: Self::mul_const(self.val, rhs.val),
         }
-
-        let l = GF256_LOG_TABLE[self.val as usize] as usize;
-        let r = GF256_LOG_TABLE[rhs.val as usize] as usize;
-
-        Gf256 { val: GF256_EXP_TABLE[l + r] }
     }
 }
 
