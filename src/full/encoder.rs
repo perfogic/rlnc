@@ -1,7 +1,7 @@
 use super::consts::BOUNDARY_MARKER;
 use crate::{
     RLNCError,
-    common::gf256::{Gf256, gf256_mul_vec_by_scalar},
+    common::gf256::{gf256_inplace_add_vectors, gf256_mul_vec_by_scalar},
 };
 use rand::Rng;
 
@@ -122,11 +122,7 @@ impl Encoder {
             .chunks_exact(self.piece_byte_len)
             .zip(coding_vector)
             .map(|(piece, &random_symbol)| gf256_mul_vec_by_scalar(piece, random_symbol))
-            .for_each(|cur| {
-                coded_piece.iter_mut().zip(cur).for_each(|(a, b)| {
-                    *a = (Gf256::new(*a) + Gf256::new(b)).get();
-                });
-            });
+            .for_each(|cur| gf256_inplace_add_vectors(coded_piece, &cur));
 
         Ok(full_coded_piece)
     }

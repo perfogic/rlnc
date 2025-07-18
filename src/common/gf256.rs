@@ -3,6 +3,10 @@
 
 use rand::Rng;
 use rand::distr::{Distribution, StandardUniform};
+use std::arch::x86_64::{
+    _mm_and_si128, _mm_lddqu_si128, _mm_set1_epi8, _mm_shuffle_epi8, _mm_srli_epi64, _mm_store_si128, _mm_storeu_si128, _mm_xor_si128, _mm256_lddqu_si256,
+    _mm256_storeu_si256, _mm256_xor_si256,
+};
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
 const GF256_BIT_WIDTH: usize = u8::BITS as usize;
@@ -593,10 +597,6 @@ fn gf256_inplace_mul_vec_by_scalar(vec: &mut [u8], scalar: u8) {
 
     if cfg!(target_arch = "x86_64") && is_x86_feature_detected!("ssse3") {
         unsafe {
-            use std::arch::x86_64::{
-                _mm_and_si128, _mm_lddqu_si128, _mm_set1_epi8, _mm_shuffle_epi8, _mm_srli_epi64, _mm_store_si128, _mm_storeu_si128, _mm_xor_si128,
-            };
-
             let l_tbl = _mm_lddqu_si128(GF256_SIMD_MUL_TABLE_LOW[scalar as usize].as_ptr() as *const _);
             let h_tbl = _mm_lddqu_si128(GF256_SIMD_MUL_TABLE_HIGH[scalar as usize].as_ptr() as *const _);
             let l_mask = _mm_set1_epi8(0x0f);
@@ -640,6 +640,42 @@ fn gf256_inplace_mul_vec_by_scalar(vec: &mut [u8], scalar: u8) {
     } else {
         vec.iter_mut().for_each(|src_symbol| {
             *src_symbol = Gf256::mul_const(*src_symbol, scalar);
+        });
+    }
+}
+
+/// Given two byte arrays of equal length, this routine performs element-wise
+/// addition over GF(2^8), mutating one of the operand vectors.
+///
+/// Note, addition over GF(2^8) is nothing but XOR-ing two operands. If this function
+/// runs on `x86_64` with `avx2` feature, it can perform fast SIMD addition using vector
+/// intrinsics.
+pub fn gf256_inplace_add_vectors(vec_dst: &mut [u8], vec_src: &[u8]) {
+    if cfg!(target_arch = "x86_64") && is_x86_feature_detected!("avx2") {
+        unsafe {
+            let mut iter_dst = vec_dst.chunks_exact_mut(32);
+            let mut iter_src = vec_src.chunks_exact(32);
+
+            while let Some(chunk_dst) = iter_dst.next()
+                && let Some(chunk_src) = iter_src.next()
+            {
+                let chunk_dst_simd = _mm256_lddqu_si256(chunk_dst.as_ptr() as *const _);
+                let chunk_src_simd = _mm256_lddqu_si256(chunk_src.as_ptr() as *const _);
+                let chunk_result = _mm256_xor_si256(chunk_dst_simd, chunk_src_simd);
+
+                _mm256_storeu_si256(chunk_dst.as_mut_ptr() as *mut _, chunk_result);
+            }
+
+            let remainder_dst = iter_dst.into_remainder();
+            let remainder_src = iter_src.remainder();
+
+            remainder_dst.iter_mut().zip(remainder_src).for_each(|(a, b)| {
+                *a ^= b;
+            });
+        }
+    } else {
+        vec_dst.iter_mut().zip(vec_src).for_each(|(a, b)| {
+            *a ^= b;
         });
     }
 }
