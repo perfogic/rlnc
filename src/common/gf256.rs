@@ -85,7 +85,7 @@ fn gf256_inplace_mul_vec_by_scalar(vec: &mut [u8], scalar: u8) {
 
             let mut iter = vec.chunks_exact_mut(2 * GF256_HALF_ORDER);
 
-            while let Some(chunk) = iter.next() {
+            for chunk in iter.by_ref() {
                 let chunk_simd = _mm256_lddqu_si256(chunk.as_ptr() as *const _);
 
                 let chunk_simd_lo = _mm256_and_si256(chunk_simd, l_mask);
@@ -111,7 +111,7 @@ fn gf256_inplace_mul_vec_by_scalar(vec: &mut [u8], scalar: u8) {
 
             let mut iter = vec.chunks_exact_mut(GF256_HALF_ORDER);
 
-            while let Some(chunk) = iter.next() {
+            for chunk in iter.by_ref() {
                 let chunk_simd = _mm_lddqu_si128(chunk.as_ptr() as *const _);
 
                 let chunk_simd_lo = _mm_and_si128(chunk_simd, l_mask);
