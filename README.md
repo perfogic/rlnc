@@ -55,7 +55,7 @@ Coverage Results:
 || src/full/decoder.rs: 67/73
 || src/full/encoder.rs: 29/31
 || src/full/recoder.rs: 30/36
-|| 
+||
 89.47% coverage, 136/152 lines covered
 ```
 
@@ -105,18 +105,18 @@ make bench # First with `default` feature, then with `parallel` feature enabled.
 
 ### On 12th Gen Intel(R) Core(TM) i7-1260P
 
-Running benchmarks on `Linux 6.14.0-23-generic x86_64`, compiled with `rustc 1.88.0 (6b00bc388 2025-06-23)`.
+Running benchmarks on `Linux 6.14.0-24-generic x86_64`, compiled with `rustc 1.88.0 (6b00bc388 2025-06-23)`.
 
 - **Full RLNC Encoder Performance**
-  The encoder demonstrates strong performance.
-  - **`default` Feature:** Achieves throughputs consistently between **1.6 GiB/s and 2.3 GiB/s**. Encoding 1MB of data typically takes around 500-600 microseconds, and for 32MB, it takes 15-19 milliseconds.
-  - **`parallel` Feature (Rayon):** Significantly boosts performance, reaching throughputs between **3.4 GiB/s and 9.7 GiB/s**. Encoding 1MB of data is much faster, typically taking 100-280 microseconds, and for 32MB, it takes 3.2-8.6 milliseconds.
+  The encoder demonstrates excellent performance.
+  - **`default` Feature:** Consistently achieves throughputs between **4.3 GiB/s and 18.6 GiB/s**. Encoding 1MB of data typically takes around 50-160 microseconds, and for 32MB, it takes 3.3-7.7 milliseconds.
+  - **`parallel` Feature (Rayon):** Provides a significant performance boost, reaching throughputs between **3.4 GiB/s and 9.7 GiB/s**. Encoding 1MB of data is much faster, typically taking 100-280 microseconds, and for 32MB, it takes 3.2-8.6 milliseconds.
   - **Impact of Number of Pieces:** For both default and parallel implementations, the number of pieces the data is split into has a minimal impact on the encoding speed, with throughputs remaining consistently high across various piece counts.
 
 - **Full RLNC Recoder Performance**
-  The recoder is also very fast.
-  - **`default` Feature:** Achieves throughputs between **1.6 GiB/s and 2.6 GiB/s**. Recoding 1MB of data typically takes 200-320 microseconds, and for 32MB, it takes 7.8-10.1 milliseconds.
-  - **`parallel` Feature (Rayon):** Shows substantial improvements, reaching throughputs between **2.9 GiB/s and 7.9 GiB/s**. Recoding 1MB of data is very quick, taking approximately 85-190 microseconds, and for 32MB, it takes 2.0-5.6 milliseconds.
+  The recoder also demonstrates excellent speed.
+  - **`default` Feature:** Achieves throughputs between **5.2 GiB/s and 17.0 GiB/s**. Recoding 1MB of data typically takes 30-70 microseconds, and for 32MB, it takes 1.7-3.4 milliseconds.
+  - **`parallel` Feature (Rayon):** Demonstrates substantial improvements, reaching throughputs between **2.9 GiB/s and 7.9 GiB/s**. Recoding 1MB of data is very quick, taking approximately 85-190 microseconds, and for 32MB, it takes 2.0-5.6 milliseconds.
   - **Impact of Number of Pieces:** Similar to the encoder, the recoder's performance remains largely consistent regardless of how many pieces the data is split into, demonstrating robust speed across different configurations.
 
 - **Full RLNC Decoder Performance**
@@ -124,181 +124,181 @@ Running benchmarks on `Linux 6.14.0-23-generic x86_64`, compiled with `rustc 1.8
   - **Default Feature (No Parallelism):** Throughputs range from **4 MiB/s to 74 MiB/s**. Decoding 1MB of data can take a significant amount of time, from about 13-18 milliseconds (when split into 16 pieces) up to over 230-250 milliseconds (when split into 256 pieces). For larger files like 32MB, decoding can extend to several seconds (e.g., over 7 seconds for 256 pieces).
   - **Impact of Number of Pieces:** The most significant parameter impact is observed in the decoding phase. As the number of pieces increases, the decoding time increases substantially, leading to a considerable drop in throughput. This indicates that decoding is the most computationally intensive part of the full RLNC process, and its performance is inversely proportional to the number of pieces. Parallelism benefits from this operation are minimal due to the sequential nature of Gaussian elimination.
 
-In summary, the full RLNC implementation excels in encoding and recoding speeds, maintaining GiB/s throughputs with minimal sensitivity to the number of data pieces. The `parallel` feature, leveraging Rust `rayon` data-parallelism framework, provides significant speedups for both encoding and recoding. However, decoding remains a much slower operation, with its performance significantly diminishing as the data is split into a greater number of pieces, and currently does **not** implement a parallel decoding algorithm.
+In summary, the full RLNC implementation demonstrates excellent encoding and recoding speeds, consistently achieving GiB/s throughputs with minimal sensitivity to the number of data pieces. The `parallel` feature, leveraging Rust `rayon` data-parallelism framework, provides substantial speedups for both encoding and recoding. However, decoding remains a much slower operation, with its performance significantly diminishing as the data is split into a greater number of pieces, and currently does **not** implement a parallel decoding algorithm.
 
 #### Full RLNC Encoder
 
 ```bash
-# Encoding without `rayon` data-parallelism
+# Encoding without `rayon` data-parallelism, instead using AVX2-powered SIMD vector x scalar multiplication
 
-Timer precision: 19 ns
+Timer precision: 15 ns
 full_rlnc_encoder                             fastest       │ slowest       │ median        │ mean          │ samples │ iters
 ╰─ encode                                                   │               │               │               │         │
-   ├─ 1.00 MB data splitted into 16 pieces    453.3 µs      │ 652.4 µs      │ 518.5 µs      │ 516.8 µs      │ 100     │ 100
-   │                                          2.288 GiB/s   │ 1.59 GiB/s    │ 2.001 GiB/s   │ 2.007 GiB/s   │         │
+   ├─ 1.00 MB data splitted into 16 pieces    70.85 µs      │ 159.8 µs      │ 77.42 µs      │ 78.97 µs      │ 100     │ 100
+   │                                          14.64 GiB/s   │ 6.492 GiB/s   │ 13.4 GiB/s    │ 13.13 GiB/s   │         │
    │                                          max alloc:    │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            64.03 KiB   │ 64.03 KiB     │ 64.03 KiB     │ 64.03 KiB     │         │
+   │                                            3           │ 3             │ 3             │ 3             │         │
+   │                                            128 KiB     │ 128 KiB       │ 128 KiB       │ 128 KiB       │         │
    │                                          alloc:        │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            64.03 KiB   │ 64.03 KiB     │ 64.03 KiB     │ 64.03 KiB     │         │
+   │                                            18          │ 18            │ 18            │ 18            │         │
+   │                                            1.062 MiB   │ 1.062 MiB     │ 1.062 MiB     │ 1.062 MiB     │         │
    │                                          dealloc:      │               │               │               │         │
-   │                                            1           │ 1             │ 1             │ 1             │         │
-   │                                            16 B        │ 16 B          │ 16 B          │ 16 B          │         │
-   ├─ 1.00 MB data splitted into 32 pieces    490.6 µs      │ 609.1 µs      │ 523.4 µs      │ 523.4 µs      │ 100     │ 100
-   │                                          2.052 GiB/s   │ 1.653 GiB/s   │ 1.923 GiB/s   │ 1.924 GiB/s   │         │
-   │                                          max alloc:    │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            32.06 KiB   │ 32.06 KiB     │ 32.06 KiB     │ 32.06 KiB     │         │
-   │                                          alloc:        │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            32.06 KiB   │ 32.06 KiB     │ 32.06 KiB     │ 32.06 KiB     │         │
-   │                                          dealloc:      │               │               │               │         │
-   │                                            1           │ 1             │ 1             │ 1             │         │
-   │                                            32 B        │ 32 B          │ 32 B          │ 32 B          │         │
-   ├─ 1.00 MB data splitted into 64 pieces    496 µs        │ 575.8 µs      │ 520 µs        │ 522 µs        │ 100     │ 100
-   │                                          1.999 GiB/s   │ 1.722 GiB/s   │ 1.907 GiB/s   │ 1.899 GiB/s   │         │
-   │                                          max alloc:    │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            16.12 KiB   │ 16.12 KiB     │ 16.12 KiB     │ 16.12 KiB     │         │
-   │                                          alloc:        │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            16.12 KiB   │ 16.12 KiB     │ 16.12 KiB     │ 16.12 KiB     │         │
-   │                                          dealloc:      │               │               │               │         │
-   │                                            1           │ 1             │ 1             │ 1             │         │
-   │                                            64 B        │ 64 B          │ 64 B          │ 64 B          │         │
-   ├─ 1.00 MB data splitted into 128 pieces   504.1 µs      │ 562.1 µs      │ 523.1 µs      │ 524.7 µs      │ 100     │ 100
-   │                                          1.952 GiB/s   │ 1.751 GiB/s   │ 1.881 GiB/s   │ 1.875 GiB/s   │         │
-   │                                          max alloc:    │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            8.25 KiB    │ 8.25 KiB      │ 8.25 KiB      │ 8.25 KiB      │         │
-   │                                          alloc:        │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            8.25 KiB    │ 8.25 KiB      │ 8.25 KiB      │ 8.25 KiB      │         │
-   │                                          dealloc:      │               │               │               │         │
-   │                                            1           │ 1             │ 1             │ 1             │         │
-   │                                            128 B       │ 128 B         │ 128 B         │ 128 B         │         │
-   ├─ 1.00 MB data splitted into 256 pieces   506 µs        │ 590.4 µs      │ 523.5 µs      │ 529 µs        │ 100     │ 100
-   │                                          1.938 GiB/s   │ 1.661 GiB/s   │ 1.873 GiB/s   │ 1.853 GiB/s   │         │
-   │                                          max alloc:    │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            4.5 KiB     │ 4.5 KiB       │ 4.5 KiB       │ 4.5 KiB       │         │
-   │                                          alloc:        │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            4.5 KiB     │ 4.5 KiB       │ 4.5 KiB       │ 4.5 KiB       │         │
-   │                                          dealloc:      │               │               │               │         │
-   │                                            1           │ 1             │ 1             │ 1             │         │
-   │                                            256 B       │ 256 B         │ 256 B         │ 256 B         │         │
-   ├─ 16.00 MB data splitted into 16 pieces   8.122 ms      │ 9.107 ms      │ 8.794 ms      │ 8.752 ms      │ 100     │ 100
-   │                                          2.043 GiB/s   │ 1.822 GiB/s   │ 1.887 GiB/s   │ 1.896 GiB/s   │         │
-   │                                          max alloc:    │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
+   │                                            17          │ 17            │ 17            │ 17            │         │
    │                                            1 MiB       │ 1 MiB         │ 1 MiB         │ 1 MiB         │         │
+   ├─ 1.00 MB data splitted into 32 pieces    69.25 µs      │ 88.99 µs      │ 72.13 µs      │ 72.97 µs      │ 100     │ 100
+   │                                          14.54 GiB/s   │ 11.31 GiB/s   │ 13.96 GiB/s   │ 13.8 GiB/s    │         │
+   │                                          max alloc:    │               │               │               │         │
+   │                                            3           │ 3             │ 3             │ 3             │         │
+   │                                            64.06 KiB   │ 64.06 KiB     │ 64.06 KiB     │ 64.06 KiB     │         │
    │                                          alloc:        │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
+   │                                            34          │ 34            │ 34            │ 34            │         │
+   │                                            1.031 MiB   │ 1.031 MiB     │ 1.031 MiB     │ 1.031 MiB     │         │
+   │                                          dealloc:      │               │               │               │         │
+   │                                            33          │ 33            │ 33            │ 33            │         │
    │                                            1 MiB       │ 1 MiB         │ 1 MiB         │ 1 MiB         │         │
-   │                                          dealloc:      │               │               │               │         │
-   │                                            1           │ 1             │ 1             │ 1             │         │
-   │                                            16 B        │ 16 B          │ 16 B          │ 16 B          │         │
-   ├─ 16.00 MB data splitted into 32 pieces   7.865 ms      │ 9.532 ms      │ 8.513 ms      │ 8.565 ms      │ 100     │ 100
-   │                                          2.048 GiB/s   │ 1.69 GiB/s    │ 1.892 GiB/s   │ 1.881 GiB/s   │         │
+   ├─ 1.00 MB data splitted into 64 pieces    53.26 µs      │ 67.4 µs       │ 55.43 µs      │ 55.62 µs      │ 100     │ 100
+   │                                          18.62 GiB/s   │ 14.71 GiB/s   │ 17.89 GiB/s   │ 17.83 GiB/s   │         │
    │                                          max alloc:    │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            512 KiB     │ 512 KiB       │ 512 KiB       │ 512 KiB       │         │
+   │                                            3           │ 3             │ 3             │ 3             │         │
+   │                                            32.12 KiB   │ 32.12 KiB     │ 32.12 KiB     │ 32.12 KiB     │         │
    │                                          alloc:        │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            512 KiB     │ 512 KiB       │ 512 KiB       │ 512 KiB       │         │
+   │                                            66          │ 66            │ 66            │ 66            │         │
+   │                                            1.015 MiB   │ 1.015 MiB     │ 1.015 MiB     │ 1.015 MiB     │         │
    │                                          dealloc:      │               │               │               │         │
-   │                                            1           │ 1             │ 1             │ 1             │         │
-   │                                            32 B        │ 32 B          │ 32 B          │ 32 B          │         │
-   ├─ 16.00 MB data splitted into 64 pieces   8.101 ms      │ 9.894 ms      │ 8.408 ms      │ 8.443 ms      │ 100     │ 100
-   │                                          1.958 GiB/s   │ 1.603 GiB/s   │ 1.887 GiB/s   │ 1.879 GiB/s   │         │
+   │                                            65          │ 65            │ 65            │ 65            │         │
+   │                                            1 MiB       │ 1 MiB         │ 1 MiB         │ 1 MiB         │         │
+   ├─ 1.00 MB data splitted into 128 pieces   52.41 µs      │ 78.46 µs      │ 55.28 µs      │ 58.43 µs      │ 100     │ 100
+   │                                          18.77 GiB/s   │ 12.54 GiB/s   │ 17.8 GiB/s    │ 16.84 GiB/s   │         │
    │                                          max alloc:    │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            256.1 KiB   │ 256.1 KiB     │ 256.1 KiB     │ 256.1 KiB     │         │
+   │                                            3           │ 3             │ 3             │ 3             │         │
+   │                                            16.25 KiB   │ 16.25 KiB     │ 16.25 KiB     │ 16.25 KiB     │         │
    │                                          alloc:        │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            256.1 KiB   │ 256.1 KiB     │ 256.1 KiB     │ 256.1 KiB     │         │
+   │                                            130         │ 130           │ 130           │ 130           │         │
+   │                                            1.008 MiB   │ 1.008 MiB     │ 1.008 MiB     │ 1.008 MiB     │         │
    │                                          dealloc:      │               │               │               │         │
-   │                                            1           │ 1             │ 1             │ 1             │         │
-   │                                            64 B        │ 64 B          │ 64 B          │ 64 B          │         │
-   ├─ 16.00 MB data splitted into 128 pieces  8.099 ms      │ 8.868 ms      │ 8.384 ms      │ 8.409 ms      │ 100     │ 100
-   │                                          1.944 GiB/s   │ 1.775 GiB/s   │ 1.878 GiB/s   │ 1.872 GiB/s   │         │
+   │                                            129         │ 129           │ 129           │ 129           │         │
+   │                                            1 MiB       │ 1 MiB         │ 1 MiB         │ 1 MiB         │         │
+   ├─ 1.00 MB data splitted into 256 pieces   56.25 µs      │ 66.85 µs      │ 58.82 µs      │ 59.37 µs      │ 100     │ 100
+   │                                          17.43 GiB/s   │ 14.67 GiB/s   │ 16.67 GiB/s   │ 16.51 GiB/s   │         │
    │                                          max alloc:    │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            128.2 KiB   │ 128.2 KiB     │ 128.2 KiB     │ 128.2 KiB     │         │
+   │                                            3           │ 3             │ 3             │ 3             │         │
+   │                                            8.501 KiB   │ 8.501 KiB     │ 8.501 KiB     │ 8.501 KiB     │         │
    │                                          alloc:        │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            128.2 KiB   │ 128.2 KiB     │ 128.2 KiB     │ 128.2 KiB     │         │
+   │                                            258         │ 258           │ 258           │ 258           │         │
+   │                                            1.004 MiB   │ 1.004 MiB     │ 1.004 MiB     │ 1.004 MiB     │         │
    │                                          dealloc:      │               │               │               │         │
-   │                                            1           │ 1             │ 1             │ 1             │         │
-   │                                            128 B       │ 128 B         │ 128 B         │ 128 B         │         │
-   ├─ 16.00 MB data splitted into 256 pieces  7.948 ms      │ 8.973 ms      │ 8.399 ms      │ 8.421 ms      │ 100     │ 100
-   │                                          1.973 GiB/s   │ 1.748 GiB/s   │ 1.867 GiB/s   │ 1.862 GiB/s   │         │
+   │                                            257         │ 257           │ 257           │ 257           │         │
+   │                                            1 MiB       │ 1 MiB         │ 1 MiB         │ 1 MiB         │         │
+   ├─ 16.00 MB data splitted into 16 pieces   2.475 ms      │ 3.137 ms      │ 2.572 ms      │ 2.602 ms      │ 100     │ 100
+   │                                          6.706 GiB/s   │ 5.291 GiB/s   │ 6.453 GiB/s   │ 6.379 GiB/s   │         │
    │                                          max alloc:    │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            64.5 KiB    │ 64.5 KiB      │ 64.5 KiB      │ 64.5 KiB      │         │
-   │                                          alloc:        │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            64.5 KiB    │ 64.5 KiB      │ 64.5 KiB      │ 64.5 KiB      │         │
-   │                                          dealloc:      │               │               │               │         │
-   │                                            1           │ 1             │ 1             │ 1             │         │
-   │                                            256 B       │ 256 B         │ 256 B         │ 256 B         │         │
-   ├─ 32.00 MB data splitted into 16 pieces   14.82 ms      │ 18.81 ms      │ 16.92 ms      │ 16.9 ms       │ 100     │ 100
-   │                                          2.239 GiB/s   │ 1.764 GiB/s   │ 1.961 GiB/s   │ 1.964 GiB/s   │         │
-   │                                          max alloc:    │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
+   │                                            3           │ 3             │ 3             │ 3             │         │
    │                                            2 MiB       │ 2 MiB         │ 2 MiB         │ 2 MiB         │         │
    │                                          alloc:        │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
+   │                                            18          │ 18            │ 18            │ 18            │         │
+   │                                            17 MiB      │ 17 MiB        │ 17 MiB        │ 17 MiB        │         │
+   │                                          dealloc:      │               │               │               │         │
+   │                                            17          │ 17            │ 17            │ 17            │         │
+   │                                            16 MiB      │ 16 MiB        │ 16 MiB        │ 16 MiB        │         │
+   ├─ 16.00 MB data splitted into 32 pieces   1.584 ms      │ 2.423 ms      │ 1.673 ms      │ 1.745 ms      │ 100     │ 100
+   │                                          10.16 GiB/s   │ 6.647 GiB/s   │ 9.627 GiB/s   │ 9.229 GiB/s   │         │
+   │                                          max alloc:    │               │               │               │         │
+   │                                            3           │ 3             │ 3             │ 3             │         │
+   │                                            1 MiB       │ 1 MiB         │ 1 MiB         │ 1 MiB         │         │
+   │                                          alloc:        │               │               │               │         │
+   │                                            34          │ 34            │ 34            │ 34            │         │
+   │                                            16.5 MiB    │ 16.5 MiB      │ 16.5 MiB      │ 16.5 MiB      │         │
+   │                                          dealloc:      │               │               │               │         │
+   │                                            33          │ 33            │ 33            │ 33            │         │
+   │                                            16 MiB      │ 16 MiB        │ 16 MiB        │ 16 MiB        │         │
+   ├─ 16.00 MB data splitted into 64 pieces   1.304 ms      │ 2.149 ms      │ 1.357 ms      │ 1.434 ms      │ 100     │ 100
+   │                                          12.16 GiB/s   │ 7.381 GiB/s   │ 11.68 GiB/s   │ 11.06 GiB/s   │         │
+   │                                          max alloc:    │               │               │               │         │
+   │                                            3           │ 3             │ 3             │ 3             │         │
+   │                                            512.1 KiB   │ 512.1 KiB     │ 512.1 KiB     │ 512.1 KiB     │         │
+   │                                          alloc:        │               │               │               │         │
+   │                                            66          │ 66            │ 66            │ 66            │         │
+   │                                            16.25 MiB   │ 16.25 MiB     │ 16.25 MiB     │ 16.25 MiB     │         │
+   │                                          dealloc:      │               │               │               │         │
+   │                                            65          │ 65            │ 65            │ 65            │         │
+   │                                            16 MiB      │ 16 MiB        │ 16 MiB        │ 16 MiB        │         │
+   ├─ 16.00 MB data splitted into 128 pieces  1.286 ms      │ 1.9 ms        │ 1.318 ms      │ 1.36 ms       │ 100     │ 100
+   │                                          12.24 GiB/s   │ 8.283 GiB/s   │ 11.94 GiB/s   │ 11.57 GiB/s   │         │
+   │                                          max alloc:    │               │               │               │         │
+   │                                            3           │ 3             │ 3             │ 3             │         │
+   │                                            256.2 KiB   │ 256.2 KiB     │ 256.2 KiB     │ 256.2 KiB     │         │
+   │                                          alloc:        │               │               │               │         │
+   │                                            130         │ 130           │ 130           │ 130           │         │
+   │                                            16.12 MiB   │ 16.12 MiB     │ 16.12 MiB     │ 16.12 MiB     │         │
+   │                                          dealloc:      │               │               │               │         │
+   │                                            129         │ 129           │ 129           │ 129           │         │
+   │                                            16 MiB      │ 16 MiB        │ 16 MiB        │ 16 MiB        │         │
+   ├─ 16.00 MB data splitted into 256 pieces  1.324 ms      │ 1.887 ms      │ 1.351 ms      │ 1.39 ms       │ 100     │ 100
+   │                                          11.84 GiB/s   │ 8.31 GiB/s    │ 11.6 GiB/s    │ 11.28 GiB/s   │         │
+   │                                          max alloc:    │               │               │               │         │
+   │                                            3           │ 3             │ 3             │ 3             │         │
+   │                                            128.5 KiB   │ 128.5 KiB     │ 128.5 KiB     │ 128.5 KiB     │         │
+   │                                          alloc:        │               │               │               │         │
+   │                                            258         │ 258           │ 258           │ 258           │         │
+   │                                            16.06 MiB   │ 16.06 MiB     │ 16.06 MiB     │ 16.06 MiB     │         │
+   │                                          dealloc:      │               │               │               │         │
+   │                                            257         │ 257           │ 257           │ 257           │         │
+   │                                            16 MiB      │ 16 MiB        │ 16 MiB        │ 16 MiB        │         │
+   ├─ 32.00 MB data splitted into 16 pieces   6.252 ms      │ 7.625 ms      │ 6.42 ms       │ 6.481 ms      │ 100     │ 100
+   │                                          5.31 GiB/s    │ 4.354 GiB/s   │ 5.171 GiB/s   │ 5.122 GiB/s   │         │
+   │                                          max alloc:    │               │               │               │         │
+   │                                            3           │ 3             │ 3             │ 3             │         │
+   │                                            4 MiB       │ 4 MiB         │ 4 MiB         │ 4 MiB         │         │
+   │                                          alloc:        │               │               │               │         │
+   │                                            18          │ 18            │ 18            │ 18            │         │
+   │                                            34 MiB      │ 34 MiB        │ 34 MiB        │ 34 MiB        │         │
+   │                                          dealloc:      │               │               │               │         │
+   │                                            17          │ 17            │ 17            │ 17            │         │
+   │                                            32 MiB      │ 32 MiB        │ 32 MiB        │ 32 MiB        │         │
+   ├─ 32.00 MB data splitted into 32 pieces   4.829 ms      │ 5.558 ms      │ 4.954 ms      │ 5.026 ms      │ 100     │ 100
+   │                                          6.672 GiB/s   │ 5.797 GiB/s   │ 6.504 GiB/s   │ 6.411 GiB/s   │         │
+   │                                          max alloc:    │               │               │               │         │
+   │                                            3           │ 3             │ 3             │ 3             │         │
    │                                            2 MiB       │ 2 MiB         │ 2 MiB         │ 2 MiB         │         │
+   │                                          alloc:        │               │               │               │         │
+   │                                            34          │ 34            │ 34            │ 34            │         │
+   │                                            33 MiB      │ 33 MiB        │ 33 MiB        │ 33 MiB        │         │
    │                                          dealloc:      │               │               │               │         │
-   │                                            1           │ 1             │ 1             │ 1             │         │
-   │                                            16 B        │ 16 B          │ 16 B          │ 16 B          │         │
-   ├─ 32.00 MB data splitted into 32 pieces   16.12 ms      │ 18.7 ms       │ 16.88 ms      │ 16.89 ms      │ 100     │ 100
-   │                                          1.998 GiB/s   │ 1.722 GiB/s   │ 1.909 GiB/s   │ 1.907 GiB/s   │         │
+   │                                            33          │ 33            │ 33            │ 33            │         │
+   │                                            32 MiB      │ 32 MiB        │ 32 MiB        │ 32 MiB        │         │
+   ├─ 32.00 MB data splitted into 64 pieces   3.786 ms      │ 4.662 ms      │ 3.961 ms      │ 4.031 ms      │ 100     │ 100
+   │                                          8.381 GiB/s   │ 6.806 GiB/s   │ 8.01 GiB/s    │ 7.871 GiB/s   │         │
    │                                          max alloc:    │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
+   │                                            3           │ 3             │ 3             │ 3             │         │
    │                                            1 MiB       │ 1 MiB         │ 1 MiB         │ 1 MiB         │         │
    │                                          alloc:        │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            1 MiB       │ 1 MiB         │ 1 MiB         │ 1 MiB         │         │
+   │                                            66          │ 66            │ 66            │ 66            │         │
+   │                                            32.5 MiB    │ 32.5 MiB      │ 32.5 MiB      │ 32.5 MiB      │         │
    │                                          dealloc:      │               │               │               │         │
-   │                                            1           │ 1             │ 1             │ 1             │         │
-   │                                            32 B        │ 32 B          │ 32 B          │ 32 B          │         │
-   ├─ 32.00 MB data splitted into 64 pieces   16.16 ms      │ 17.39 ms      │ 16.83 ms      │ 16.82 ms      │ 100     │ 100
-   │                                          1.963 GiB/s   │ 1.824 GiB/s   │ 1.885 GiB/s   │ 1.886 GiB/s   │         │
+   │                                            65          │ 65            │ 65            │ 65            │         │
+   │                                            32 MiB      │ 32 MiB        │ 32 MiB        │ 32 MiB        │         │
+   ├─ 32.00 MB data splitted into 128 pieces  3.382 ms      │ 4.069 ms      │ 3.453 ms      │ 3.507 ms      │ 100     │ 100
+   │                                          9.312 GiB/s   │ 7.739 GiB/s   │ 9.119 GiB/s   │ 8.979 GiB/s   │         │
    │                                          max alloc:    │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            512.1 KiB   │ 512.1 KiB     │ 512.1 KiB     │ 512.1 KiB     │         │
+   │                                            3           │ 3             │ 3             │ 3             │         │
+   │                                            512.2 KiB   │ 512.2 KiB     │ 512.2 KiB     │ 512.2 KiB     │         │
    │                                          alloc:        │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            512.1 KiB   │ 512.1 KiB     │ 512.1 KiB     │ 512.1 KiB     │         │
+   │                                            130         │ 130           │ 130           │ 130           │         │
+   │                                            32.25 MiB   │ 32.25 MiB     │ 32.25 MiB     │ 32.25 MiB     │         │
    │                                          dealloc:      │               │               │               │         │
-   │                                            1           │ 1             │ 1             │ 1             │         │
-   │                                            64 B        │ 64 B          │ 64 B          │ 64 B          │         │
-   ├─ 32.00 MB data splitted into 128 pieces  16.44 ms      │ 18.57 ms      │ 16.82 ms      │ 16.88 ms      │ 100     │ 100
-   │                                          1.914 GiB/s   │ 1.695 GiB/s   │ 1.871 GiB/s   │ 1.864 GiB/s   │         │
-   │                                          max alloc:    │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            256.2 KiB   │ 256.2 KiB     │ 256.2 KiB     │ 256.2 KiB     │         │
-   │                                          alloc:        │               │               │               │         │
-   │                                            2           │ 2             │ 2             │ 2             │         │
-   │                                            256.2 KiB   │ 256.2 KiB     │ 256.2 KiB     │ 256.2 KiB     │         │
-   │                                          dealloc:      │               │               │               │         │
-   │                                            1           │ 1             │ 1             │ 1             │         │
-   │                                            128 B       │ 128 B         │ 128 B         │ 128 B         │         │
-   ╰─ 32.00 MB data splitted into 256 pieces  16.53 ms      │ 18.82 ms      │ 16.77 ms      │ 16.86 ms      │ 100     │ 100
-                                              1.897 GiB/s   │ 1.666 GiB/s   │ 1.869 GiB/s   │ 1.86 GiB/s    │         │
+   │                                            129         │ 129           │ 129           │ 129           │         │
+   │                                            32 MiB      │ 32 MiB        │ 32 MiB        │ 32 MiB        │         │
+   ╰─ 32.00 MB data splitted into 256 pieces  3.279 ms      │ 4.002 ms      │ 3.472 ms      │ 3.519 ms      │ 100     │ 100
+                                              9.565 GiB/s   │ 7.837 GiB/s   │ 9.034 GiB/s   │ 8.913 GiB/s   │         │
                                               max alloc:    │               │               │               │         │
-                                                2           │ 2             │ 2             │ 2             │         │
-                                                128.5 KiB   │ 128.5 KiB     │ 128.5 KiB     │ 128.5 KiB     │         │
+                                                3           │ 3             │ 3             │ 3             │         │
+                                                256.5 KiB   │ 256.5 KiB     │ 256.5 KiB     │ 256.5 KiB     │         │
                                               alloc:        │               │               │               │         │
-                                                2           │ 2             │ 2             │ 2             │         │
-                                                128.5 KiB   │ 128.5 KiB     │ 128.5 KiB     │ 128.5 KiB     │         │
+                                                258         │ 258           │ 258           │ 258           │         │
+                                                32.12 MiB   │ 32.12 MiB     │ 32.12 MiB     │ 32.12 MiB     │         │
                                               dealloc:      │               │               │               │         │
-                                                1           │ 1             │ 1             │ 1             │         │
-                                                256 B       │ 256 B         │ 256 B         │ 256 B         │         │
+                                                257         │ 257           │ 257           │ 257           │         │
+                                                32 MiB      │ 32 MiB        │ 32 MiB        │ 32 MiB        │         │
 
 # ---------------------------------------------------------------------------------------------------------------------------
 # Encoding with `rayon` data-parallelism
@@ -479,176 +479,176 @@ full_rlnc_encoder                             fastest       │ slowest       �
 #### Full RLNC Recoder
 
 ```bash
-# Recoding without `rayon` data-parallelism
+# Recoding without `rayon` data-parallelism, instead using AVX2-powered SIMD vector x scalar multiplication
 
-Timer precision: 19 ns
+Timer precision: 14 ns
 full_rlnc_recoder                                                       fastest       │ slowest       │ median        │ mean          │ samples │ iters
 ╰─ recode                                                                             │               │               │               │         │
-   ├─ 1.00 MB data splitted into 16 pieces, recoding with 8 pieces      210.5 µs      │ 282.8 µs      │ 245.4 µs      │ 250.5 µs      │ 100     │ 100
-   │                                                                    2.609 GiB/s   │ 1.942 GiB/s   │ 2.238 GiB/s   │ 2.192 GiB/s   │         │
+   ├─ 1.00 MB data splitted into 16 pieces, recoding with 8 pieces      39.28 µs      │ 61.43 µs      │ 41.19 µs      │ 42.17 µs      │ 100     │ 100
+   │                                                                    13.98 GiB/s   │ 8.943 GiB/s   │ 13.33 GiB/s   │ 13.02 GiB/s   │         │
    │                                                                    max alloc:    │               │               │               │         │
    │                                                                      4           │ 4             │ 4             │ 4             │         │
    │                                                                      128 KiB     │ 128 KiB       │ 128 KiB       │ 128 KiB       │         │
    │                                                                    alloc:        │               │               │               │         │
-   │                                                                      4           │ 4             │ 4             │ 4             │         │
-   │                                                                      128 KiB     │ 128 KiB       │ 128 KiB       │ 128 KiB       │         │
+   │                                                                      12          │ 12            │ 12            │ 12            │         │
+   │                                                                      640 KiB     │ 640 KiB       │ 640 KiB       │ 640 KiB       │         │
    │                                                                    dealloc:      │               │               │               │         │
-   │                                                                      3           │ 3             │ 3             │ 3             │         │
-   │                                                                      64.03 KiB   │ 64.03 KiB     │ 64.03 KiB     │ 64.03 KiB     │         │
-   ├─ 1.00 MB data splitted into 32 pieces, recoding with 16 pieces     239.4 µs      │ 302.1 µs      │ 273.9 µs      │ 270.1 µs      │ 100     │ 100
-   │                                                                    2.168 GiB/s   │ 1.719 GiB/s   │ 1.895 GiB/s   │ 1.922 GiB/s   │         │
+   │                                                                      11          │ 11            │ 11            │ 11            │         │
+   │                                                                      576 KiB     │ 576 KiB       │ 576 KiB       │ 576 KiB       │         │
+   ├─ 1.00 MB data splitted into 32 pieces, recoding with 16 pieces     34.5 µs       │ 39.46 µs      │ 36.99 µs      │ 36.87 µs      │ 100     │ 100
+   │                                                                    15.04 GiB/s   │ 13.15 GiB/s   │ 14.03 GiB/s   │ 14.08 GiB/s   │         │
    │                                                                    max alloc:    │               │               │               │         │
    │                                                                      4           │ 4             │ 4             │ 4             │         │
    │                                                                      64.09 KiB   │ 64.09 KiB     │ 64.09 KiB     │ 64.09 KiB     │         │
    │                                                                    alloc:        │               │               │               │         │
-   │                                                                      4           │ 4             │ 4             │ 4             │         │
-   │                                                                      64.09 KiB   │ 64.09 KiB     │ 64.09 KiB     │ 64.09 KiB     │         │
+   │                                                                      20          │ 20            │ 20            │ 20            │         │
+   │                                                                      576.1 KiB   │ 576.1 KiB     │ 576.1 KiB     │ 576.1 KiB     │         │
    │                                                                    dealloc:      │               │               │               │         │
-   │                                                                      3           │ 3             │ 3             │ 3             │         │
-   │                                                                      32.06 KiB   │ 32.06 KiB     │ 32.06 KiB     │ 32.06 KiB     │         │
-   ├─ 1.00 MB data splitted into 64 pieces, recoding with 32 pieces     254.2 µs      │ 309.5 µs      │ 268.2 µs      │ 268.4 µs      │ 100     │ 100
-   │                                                                    1.988 GiB/s   │ 1.633 GiB/s   │ 1.884 GiB/s   │ 1.883 GiB/s   │         │
+   │                                                                      19          │ 19            │ 19            │ 19            │         │
+   │                                                                      544 KiB     │ 544 KiB       │ 544 KiB       │ 544 KiB       │         │
+   ├─ 1.00 MB data splitted into 64 pieces, recoding with 32 pieces     29.68 µs      │ 35.03 µs      │ 30.13 µs      │ 30.41 µs      │ 100     │ 100
+   │                                                                    17.03 GiB/s   │ 14.43 GiB/s   │ 16.77 GiB/s   │ 16.62 GiB/s   │         │
    │                                                                    max alloc:    │               │               │               │         │
    │                                                                      4           │ 4             │ 4             │ 4             │         │
    │                                                                      32.18 KiB   │ 32.18 KiB     │ 32.18 KiB     │ 32.18 KiB     │         │
    │                                                                    alloc:        │               │               │               │         │
-   │                                                                      4           │ 4             │ 4             │ 4             │         │
-   │                                                                      32.18 KiB   │ 32.18 KiB     │ 32.18 KiB     │ 32.18 KiB     │         │
+   │                                                                      36          │ 36            │ 36            │ 36            │         │
+   │                                                                      544.2 KiB   │ 544.2 KiB     │ 544.2 KiB     │ 544.2 KiB     │         │
    │                                                                    dealloc:      │               │               │               │         │
-   │                                                                      3           │ 3             │ 3             │ 3             │         │
-   │                                                                      16.12 KiB   │ 16.12 KiB     │ 16.12 KiB     │ 16.12 KiB     │         │
-   ├─ 1.00 MB data splitted into 128 pieces, recoding with 64 pieces    258 µs        │ 302.1 µs      │ 267.9 µs      │ 267.7 µs      │ 100     │ 100
-   │                                                                    1.952 GiB/s   │ 1.667 GiB/s   │ 1.879 GiB/s   │ 1.881 GiB/s   │         │
+   │                                                                      35          │ 35            │ 35            │ 35            │         │
+   │                                                                      528.1 KiB   │ 528.1 KiB     │ 528.1 KiB     │ 528.1 KiB     │         │
+   ├─ 1.00 MB data splitted into 128 pieces, recoding with 64 pieces    34.71 µs      │ 43.89 µs      │ 36.72 µs      │ 36.88 µs      │ 100     │ 100
+   │                                                                    14.51 GiB/s   │ 11.47 GiB/s   │ 13.71 GiB/s   │ 13.65 GiB/s   │         │
    │                                                                    max alloc:    │               │               │               │         │
    │                                                                      4           │ 4             │ 4             │ 4             │         │
    │                                                                      16.37 KiB   │ 16.37 KiB     │ 16.37 KiB     │ 16.37 KiB     │         │
    │                                                                    alloc:        │               │               │               │         │
-   │                                                                      4           │ 4             │ 4             │ 4             │         │
-   │                                                                      16.37 KiB   │ 16.37 KiB     │ 16.37 KiB     │ 16.37 KiB     │         │
+   │                                                                      68          │ 68            │ 68            │ 68            │         │
+   │                                                                      528.4 KiB   │ 528.4 KiB     │ 528.4 KiB     │ 528.4 KiB     │         │
    │                                                                    dealloc:      │               │               │               │         │
-   │                                                                      3           │ 3             │ 3             │ 3             │         │
-   │                                                                      8.25 KiB    │ 8.25 KiB      │ 8.25 KiB      │ 8.25 KiB      │         │
-   ├─ 1.00 MB data splitted into 256 pieces, recoding with 128 pieces   274.7 µs      │ 315 µs        │ 286.7 µs      │ 288 µs        │ 100     │ 100
-   │                                                                    1.903 GiB/s   │ 1.66 GiB/s    │ 1.824 GiB/s   │ 1.815 GiB/s   │         │
+   │                                                                      67          │ 67            │ 67            │ 67            │         │
+   │                                                                      520.3 KiB   │ 520.3 KiB     │ 520.3 KiB     │ 520.3 KiB     │         │
+   ├─ 1.00 MB data splitted into 256 pieces, recoding with 128 pieces   60.61 µs      │ 69.06 µs      │ 62.96 µs      │ 63.54 µs      │ 100     │ 100
+   │                                                                    8.627 GiB/s   │ 7.572 GiB/s   │ 8.305 GiB/s   │ 8.229 GiB/s   │         │
    │                                                                    max alloc:    │               │               │               │         │
    │                                                                      4           │ 4             │ 4             │ 4             │         │
    │                                                                      8.751 KiB   │ 8.751 KiB     │ 8.751 KiB     │ 8.751 KiB     │         │
    │                                                                    alloc:        │               │               │               │         │
-   │                                                                      4           │ 4             │ 4             │ 4             │         │
-   │                                                                      8.751 KiB   │ 8.751 KiB     │ 8.751 KiB     │ 8.751 KiB     │         │
+   │                                                                      132         │ 132           │ 132           │ 132           │         │
+   │                                                                      520.8 KiB   │ 520.8 KiB     │ 520.8 KiB     │ 520.8 KiB     │         │
    │                                                                    dealloc:      │               │               │               │         │
-   │                                                                      3           │ 3             │ 3             │ 3             │         │
-   │                                                                      4.5 KiB     │ 4.5 KiB       │ 4.5 KiB       │ 4.5 KiB       │         │
-   ├─ 16.00 MB data splitted into 16 pieces, recoding with 8 pieces     4.059 ms      │ 4.446 ms      │ 4.194 ms      │ 4.198 ms      │ 100     │ 100
-   │                                                                    2.165 GiB/s   │ 1.976 GiB/s   │ 2.095 GiB/s   │ 2.093 GiB/s   │         │
+   │                                                                      131         │ 131           │ 131           │ 131           │         │
+   │                                                                      516.6 KiB   │ 516.6 KiB     │ 516.6 KiB     │ 516.6 KiB     │         │
+   ├─ 16.00 MB data splitted into 16 pieces, recoding with 8 pieces     1.26 ms       │ 1.503 ms      │ 1.294 ms      │ 1.308 ms      │ 100     │ 100
+   │                                                                    6.973 GiB/s   │ 5.847 GiB/s   │ 6.788 GiB/s   │ 6.718 GiB/s   │         │
    │                                                                    max alloc:    │               │               │               │         │
    │                                                                      4           │ 4             │ 4             │ 4             │         │
    │                                                                      2 MiB       │ 2 MiB         │ 2 MiB         │ 2 MiB         │         │
    │                                                                    alloc:        │               │               │               │         │
-   │                                                                      4           │ 4             │ 4             │ 4             │         │
-   │                                                                      2 MiB       │ 2 MiB         │ 2 MiB         │ 2 MiB         │         │
+   │                                                                      12          │ 12            │ 12            │ 12            │         │
+   │                                                                      10 MiB      │ 10 MiB        │ 10 MiB        │ 10 MiB        │         │
    │                                                                    dealloc:      │               │               │               │         │
-   │                                                                      3           │ 3             │ 3             │ 3             │         │
-   │                                                                      1 MiB       │ 1 MiB         │ 1 MiB         │ 1 MiB         │         │
-   ├─ 16.00 MB data splitted into 32 pieces, recoding with 16 pieces    3.711 ms      │ 4.561 ms      │ 4.191 ms      │ 4.184 ms      │ 100     │ 100
-   │                                                                    2.236 GiB/s   │ 1.819 GiB/s   │ 1.98 GiB/s    │ 1.983 GiB/s   │         │
+   │                                                                      11          │ 11            │ 11            │ 11            │         │
+   │                                                                      9 MiB       │ 9 MiB         │ 9 MiB         │ 9 MiB         │         │
+   ├─ 16.00 MB data splitted into 32 pieces, recoding with 16 pieces    899.1 µs      │ 1.637 ms      │ 964.6 µs      │ 1.005 ms      │ 100     │ 100
+   │                                                                    9.232 GiB/s   │ 5.069 GiB/s   │ 8.605 GiB/s   │ 8.255 GiB/s   │         │
    │                                                                    max alloc:    │               │               │               │         │
    │                                                                      4           │ 4             │ 4             │ 4             │         │
    │                                                                      1 MiB       │ 1 MiB         │ 1 MiB         │ 1 MiB         │         │
    │                                                                    alloc:        │               │               │               │         │
-   │                                                                      4           │ 4             │ 4             │ 4             │         │
-   │                                                                      1 MiB       │ 1 MiB         │ 1 MiB         │ 1 MiB         │         │
+   │                                                                      20          │ 20            │ 20            │ 20            │         │
+   │                                                                      9 MiB       │ 9 MiB         │ 9 MiB         │ 9 MiB         │         │
    │                                                                    dealloc:      │               │               │               │         │
-   │                                                                      3           │ 3             │ 3             │ 3             │         │
-   │                                                                      512 KiB     │ 512 KiB       │ 512 KiB       │ 512 KiB       │         │
-   ├─ 16.00 MB data splitted into 64 pieces, recoding with 32 pieces    4.02 ms       │ 4.577 ms      │ 4.244 ms      │ 4.25 ms       │ 100     │ 100
-   │                                                                    2.004 GiB/s   │ 1.76 GiB/s    │ 1.898 GiB/s   │ 1.895 GiB/s   │         │
+   │                                                                      19          │ 19            │ 19            │ 19            │         │
+   │                                                                      8.5 MiB     │ 8.5 MiB       │ 8.5 MiB       │ 8.5 MiB       │         │
+   ├─ 16.00 MB data splitted into 64 pieces, recoding with 32 pieces    700 µs        │ 932.3 µs      │ 781.4 µs      │ 790.4 µs      │ 100     │ 100
+   │                                                                    11.51 GiB/s   │ 8.643 GiB/s   │ 10.31 GiB/s   │ 10.19 GiB/s   │         │
    │                                                                    max alloc:    │               │               │               │         │
    │                                                                      4           │ 4             │ 4             │ 4             │         │
    │                                                                      512.1 KiB   │ 512.1 KiB     │ 512.1 KiB     │ 512.1 KiB     │         │
    │                                                                    alloc:        │               │               │               │         │
-   │                                                                      4           │ 4             │ 4             │ 4             │         │
-   │                                                                      512.1 KiB   │ 512.1 KiB     │ 512.1 KiB     │ 512.1 KiB     │         │
+   │                                                                      36          │ 36            │ 36            │ 36            │         │
+   │                                                                      8.5 MiB     │ 8.5 MiB       │ 8.5 MiB       │ 8.5 MiB       │         │
    │                                                                    dealloc:      │               │               │               │         │
-   │                                                                      3           │ 3             │ 3             │ 3             │         │
-   │                                                                      256.1 KiB   │ 256.1 KiB     │ 256.1 KiB     │ 256.1 KiB     │         │
-   ├─ 16.00 MB data splitted into 128 pieces, recoding with 64 pieces   4.06 ms       │ 4.496 ms      │ 4.234 ms      │ 4.253 ms      │ 100     │ 100
-   │                                                                    1.955 GiB/s   │ 1.766 GiB/s   │ 1.875 GiB/s   │ 1.867 GiB/s   │         │
+   │                                                                      35          │ 35            │ 35            │ 35            │         │
+   │                                                                      8.25 MiB    │ 8.25 MiB      │ 8.25 MiB      │ 8.25 MiB      │         │
+   ├─ 16.00 MB data splitted into 128 pieces, recoding with 64 pieces   689.1 µs      │ 1.035 ms      │ 775.3 µs      │ 793.4 µs      │ 100     │ 100
+   │                                                                    11.52 GiB/s   │ 7.673 GiB/s   │ 10.24 GiB/s   │ 10.01 GiB/s   │         │
    │                                                                    max alloc:    │               │               │               │         │
    │                                                                      4           │ 4             │ 4             │ 4             │         │
    │                                                                      256.3 KiB   │ 256.3 KiB     │ 256.3 KiB     │ 256.3 KiB     │         │
    │                                                                    alloc:        │               │               │               │         │
-   │                                                                      4           │ 4             │ 4             │ 4             │         │
-   │                                                                      256.3 KiB   │ 256.3 KiB     │ 256.3 KiB     │ 256.3 KiB     │         │
+   │                                                                      68          │ 68            │ 68            │ 68            │         │
+   │                                                                      8.25 MiB    │ 8.25 MiB      │ 8.25 MiB      │ 8.25 MiB      │         │
    │                                                                    dealloc:      │               │               │               │         │
-   │                                                                      3           │ 3             │ 3             │ 3             │         │
-   │                                                                      128.2 KiB   │ 128.2 KiB     │ 128.2 KiB     │ 128.2 KiB     │         │
-   ├─ 16.00 MB data splitted into 256 pieces, recoding with 128 pieces  3.981 ms      │ 4.527 ms      │ 4.226 ms      │ 4.233 ms      │ 100     │ 100
-   │                                                                    1.985 GiB/s   │ 1.745 GiB/s   │ 1.87 GiB/s    │ 1.866 GiB/s   │         │
+   │                                                                      67          │ 67            │ 67            │ 67            │         │
+   │                                                                      8.125 MiB   │ 8.125 MiB     │ 8.125 MiB     │ 8.125 MiB     │         │
+   ├─ 16.00 MB data splitted into 256 pieces, recoding with 128 pieces  737.7 µs      │ 1.143 ms      │ 801.3 µs      │ 818.4 µs      │ 100     │ 100
+   │                                                                    10.71 GiB/s   │ 6.913 GiB/s   │ 9.864 GiB/s   │ 9.657 GiB/s   │         │
    │                                                                    max alloc:    │               │               │               │         │
    │                                                                      4           │ 4             │ 4             │ 4             │         │
    │                                                                      128.7 KiB   │ 128.7 KiB     │ 128.7 KiB     │ 128.7 KiB     │         │
    │                                                                    alloc:        │               │               │               │         │
-   │                                                                      4           │ 4             │ 4             │ 4             │         │
-   │                                                                      128.7 KiB   │ 128.7 KiB     │ 128.7 KiB     │ 128.7 KiB     │         │
+   │                                                                      132         │ 132           │ 132           │ 132           │         │
+   │                                                                      8.125 MiB   │ 8.125 MiB     │ 8.125 MiB     │ 8.125 MiB     │         │
    │                                                                    dealloc:      │               │               │               │         │
-   │                                                                      3           │ 3             │ 3             │ 3             │         │
-   │                                                                      64.5 KiB    │ 64.5 KiB      │ 64.5 KiB      │ 64.5 KiB      │         │
-   ├─ 32.00 MB data splitted into 16 pieces, recoding with 8 pieces     7.983 ms      │ 9.973 ms      │ 9.176 ms      │ 9.181 ms      │ 100     │ 100
-   │                                                                    2.201 GiB/s   │ 1.762 GiB/s   │ 1.915 GiB/s   │ 1.914 GiB/s   │         │
+   │                                                                      131         │ 131           │ 131           │ 131           │         │
+   │                                                                      8.063 MiB   │ 8.063 MiB     │ 8.063 MiB     │ 8.063 MiB     │         │
+   ├─ 32.00 MB data splitted into 16 pieces, recoding with 8 pieces     2.929 ms      │ 3.376 ms      │ 3.034 ms      │ 3.061 ms      │ 100     │ 100
+   │                                                                    5.999 GiB/s   │ 5.205 GiB/s   │ 5.792 GiB/s   │ 5.741 GiB/s   │         │
    │                                                                    max alloc:    │               │               │               │         │
    │                                                                      4           │ 4             │ 4             │ 4             │         │
    │                                                                      4 MiB       │ 4 MiB         │ 4 MiB         │ 4 MiB         │         │
    │                                                                    alloc:        │               │               │               │         │
-   │                                                                      4           │ 4             │ 4             │ 4             │         │
-   │                                                                      4 MiB       │ 4 MiB         │ 4 MiB         │ 4 MiB         │         │
+   │                                                                      12          │ 12            │ 12            │ 12            │         │
+   │                                                                      20 MiB      │ 20 MiB        │ 20 MiB        │ 20 MiB        │         │
    │                                                                    dealloc:      │               │               │               │         │
-   │                                                                      3           │ 3             │ 3             │ 3             │         │
-   │                                                                      2 MiB       │ 2 MiB         │ 2 MiB         │ 2 MiB         │         │
-   ├─ 32.00 MB data splitted into 32 pieces, recoding with 16 pieces    7.814 ms      │ 10.06 ms      │ 9 ms          │ 9.002 ms      │ 100     │ 100
-   │                                                                    2.124 GiB/s   │ 1.65 GiB/s    │ 1.844 GiB/s   │ 1.844 GiB/s   │         │
+   │                                                                      11          │ 11            │ 11            │ 11            │         │
+   │                                                                      18 MiB      │ 18 MiB        │ 18 MiB        │ 18 MiB        │         │
+   ├─ 32.00 MB data splitted into 32 pieces, recoding with 16 pieces    2.525 ms      │ 2.856 ms      │ 2.635 ms      │ 2.643 ms      │ 100     │ 100
+   │                                                                    6.574 GiB/s   │ 5.812 GiB/s   │ 6.299 GiB/s   │ 6.28 GiB/s    │         │
    │                                                                    max alloc:    │               │               │               │         │
    │                                                                      4           │ 4             │ 4             │ 4             │         │
    │                                                                      2 MiB       │ 2 MiB         │ 2 MiB         │ 2 MiB         │         │
    │                                                                    alloc:        │               │               │               │         │
-   │                                                                      4           │ 4             │ 4             │ 4             │         │
-   │                                                                      2 MiB       │ 2 MiB         │ 2 MiB         │ 2 MiB         │         │
+   │                                                                      20          │ 20            │ 20            │ 20            │         │
+   │                                                                      18 MiB      │ 18 MiB        │ 18 MiB        │ 18 MiB        │         │
    │                                                                    dealloc:      │               │               │               │         │
-   │                                                                      3           │ 3             │ 3             │ 3             │         │
-   │                                                                      1 MiB       │ 1 MiB         │ 1 MiB         │ 1 MiB         │         │
-   ├─ 32.00 MB data splitted into 64 pieces, recoding with 32 pieces    8.264 ms      │ 10 ms         │ 8.944 ms      │ 8.977 ms      │ 100     │ 100
-   │                                                                    1.949 GiB/s   │ 1.611 GiB/s   │ 1.801 GiB/s   │ 1.795 GiB/s   │         │
+   │                                                                      19          │ 19            │ 19            │ 19            │         │
+   │                                                                      17 MiB      │ 17 MiB        │ 17 MiB        │ 17 MiB        │         │
+   ├─ 32.00 MB data splitted into 64 pieces, recoding with 32 pieces    1.945 ms      │ 2.249 ms      │ 1.975 ms      │ 2.005 ms      │ 100     │ 100
+   │                                                                    8.281 GiB/s   │ 7.162 GiB/s   │ 8.155 GiB/s   │ 8.035 GiB/s   │         │
    │                                                                    max alloc:    │               │               │               │         │
    │                                                                      4           │ 4             │ 4             │ 4             │         │
    │                                                                      1 MiB       │ 1 MiB         │ 1 MiB         │ 1 MiB         │         │
    │                                                                    alloc:        │               │               │               │         │
-   │                                                                      4           │ 4             │ 4             │ 4             │         │
-   │                                                                      1 MiB       │ 1 MiB         │ 1 MiB         │ 1 MiB         │         │
+   │                                                                      36          │ 36            │ 36            │ 36            │         │
+   │                                                                      17 MiB      │ 17 MiB        │ 17 MiB        │ 17 MiB        │         │
    │                                                                    dealloc:      │               │               │               │         │
-   │                                                                      3           │ 3             │ 3             │ 3             │         │
-   │                                                                      512.1 KiB   │ 512.1 KiB     │ 512.1 KiB     │ 512.1 KiB     │         │
-   ├─ 32.00 MB data splitted into 128 pieces, recoding with 64 pieces   8.308 ms      │ 9.759 ms      │ 8.78 ms       │ 8.854 ms      │ 100     │ 100
-   │                                                                    1.91 GiB/s    │ 1.626 GiB/s   │ 1.808 GiB/s   │ 1.793 GiB/s   │         │
+   │                                                                      35          │ 35            │ 35            │ 35            │         │
+   │                                                                      16.5 MiB    │ 16.5 MiB      │ 16.5 MiB      │ 16.5 MiB      │         │
+   ├─ 32.00 MB data splitted into 128 pieces, recoding with 64 pieces   1.685 ms      │ 1.941 ms      │ 1.731 ms      │ 1.747 ms      │ 100     │ 100
+   │                                                                    9.42 GiB/s    │ 8.176 GiB/s   │ 9.168 GiB/s   │ 9.083 GiB/s   │         │
    │                                                                    max alloc:    │               │               │               │         │
    │                                                                      4           │ 4             │ 4             │ 4             │         │
    │                                                                      512.3 KiB   │ 512.3 KiB     │ 512.3 KiB     │ 512.3 KiB     │         │
    │                                                                    alloc:        │               │               │               │         │
-   │                                                                      4           │ 4             │ 4             │ 4             │         │
-   │                                                                      512.3 KiB   │ 512.3 KiB     │ 512.3 KiB     │ 512.3 KiB     │         │
+   │                                                                      68          │ 68            │ 68            │ 68            │         │
+   │                                                                      16.5 MiB    │ 16.5 MiB      │ 16.5 MiB      │ 16.5 MiB      │         │
    │                                                                    dealloc:      │               │               │               │         │
-   │                                                                      3           │ 3             │ 3             │ 3             │         │
-   │                                                                      256.2 KiB   │ 256.2 KiB     │ 256.2 KiB     │ 256.2 KiB     │         │
-   ╰─ 32.00 MB data splitted into 256 pieces, recoding with 128 pieces  8.382 ms      │ 9.788 ms      │ 8.801 ms      │ 8.901 ms      │ 100     │ 100
-                                                                        1.882 GiB/s   │ 1.611 GiB/s   │ 1.792 GiB/s   │ 1.772 GiB/s   │         │
+   │                                                                      67          │ 67            │ 67            │ 67            │         │
+   │                                                                      16.25 MiB   │ 16.25 MiB     │ 16.25 MiB     │ 16.25 MiB     │         │
+   ╰─ 32.00 MB data splitted into 256 pieces, recoding with 128 pieces  1.714 ms      │ 1.918 ms      │ 1.739 ms      │ 1.746 ms      │ 100     │ 100
+                                                                        9.201 GiB/s   │ 8.223 GiB/s   │ 9.07 GiB/s    │ 9.032 GiB/s   │         │
                                                                         max alloc:    │               │               │               │         │
                                                                           4           │ 4             │ 4             │ 4             │         │
                                                                           256.7 KiB   │ 256.7 KiB     │ 256.7 KiB     │ 256.7 KiB     │         │
                                                                         alloc:        │               │               │               │         │
-                                                                          4           │ 4             │ 4             │ 4             │         │
-                                                                          256.7 KiB   │ 256.7 KiB     │ 256.7 KiB     │ 256.7 KiB     │         │
+                                                                          132         │ 132           │ 132           │ 132           │         │
+                                                                          16.25 MiB   │ 16.25 MiB     │ 16.25 MiB     │ 16.25 MiB     │         │
                                                                         dealloc:      │               │               │               │         │
-                                                                          3           │ 3             │ 3             │ 3             │         │
-                                                                          128.5 KiB   │ 128.5 KiB     │ 128.5 KiB     │ 128.5 KiB     │         │
+                                                                          131         │ 131           │ 131           │ 131           │         │
+                                                                          16.12 MiB   │ 16.12 MiB     │ 16.12 MiB     │ 16.12 MiB     │         │
 
 # ---------------------------------------------------------------------------------------------------------------------------
 # Recoding with `rayon` data-parallelism
