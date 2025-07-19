@@ -867,9 +867,9 @@ To use `rlnc` in your Rust project, add it as a dependency in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rlnc = "=0.5.0"                                      # Use the latest version available on crates.io.
+rlnc = "=0.6.0"                                      # Use the latest version available on crates.io.
 # or
-rlnc = { version = "=0.5.0", features = "parallel" } # Uses `rayon`-based data-parallelism for much faster encoding/ recoding.
+rlnc = { version = "=0.6.0", features = "parallel" } # Uses `rayon`-based data-parallelism for much faster encoding/ recoding.
 
 rand = { version = "=0.9.1" } # Required for random number generation
 ```
