@@ -1,10 +1,12 @@
 use super::consts::BOUNDARY_MARKER;
-use crate::{
-    RLNCError,
-    common::gf256::{gf256_inplace_add_vectors, gf256_mul_vec_by_scalar},
-};
+use crate::RLNCError;
 use rand::Rng;
 
+#[cfg(not(feature = "parallel"))]
+use crate::common::gf256::{gf256_inplace_add_vectors, gf256_mul_vec_by_scalar};
+
+#[cfg(feature = "parallel")]
+use crate::common::gf256::Gf256;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
