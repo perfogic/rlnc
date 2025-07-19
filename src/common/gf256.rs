@@ -5,10 +5,10 @@ use rand::Rng;
 use rand::distr::{Distribution, StandardUniform};
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
-#[cfg(not(feature = "parallel"))]
+#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::common::macros::{generate_gf256_simd_mul_row, generate_gf256_simd_mul_table};
 
-#[cfg(not(feature = "parallel"))]
+#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
 use std::arch::x86_64::{
     _mm_and_si128, _mm_lddqu_si128, _mm_set1_epi8, _mm_shuffle_epi8, _mm_srli_epi64, _mm_storeu_si128, _mm_xor_si128, _mm256_and_si256, _mm256_lddqu_si256,
     _mm256_set1_epi8, _mm256_shuffle_epi8, _mm256_srli_epi64, _mm256_storeu_si256, _mm256_xor_si256,
@@ -16,10 +16,10 @@ use std::arch::x86_64::{
 
 const GF256_ORDER: usize = u8::MAX as usize + 1;
 
-#[cfg(not(feature = "parallel"))]
+#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
 const GF256_BIT_WIDTH: usize = u8::BITS as usize;
 
-#[cfg(not(feature = "parallel"))]
+#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
 const GF256_HALF_ORDER: usize = 1usize << (GF256_BIT_WIDTH / 2);
 
 const GF256_LOG_TABLE: [u8; GF256_ORDER] = [
@@ -55,13 +55,13 @@ const GF256_EXP_TABLE: [u8; 2 * GF256_ORDER - 2] = [
 /// AVX2 and SSSE3 optimized SIMD multiplication over GF(2^8) uses this lookup table, which is generated following
 /// https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1100-L1105.
 /// This table holds `htd->low` part, described in above link.
-#[cfg(not(feature = "parallel"))]
+#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
 const GF256_SIMD_MUL_TABLE_LOW: [[u8; 2 * GF256_HALF_ORDER]; GF256_ORDER] = generate_gf256_simd_mul_table!(true);
 
 /// AVX2 and SSSE3 optimized SIMD multiplication over GF(2^8) uses this lookup table, which is generated following
 /// https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1100-L1105.
 /// This table holds `htd->high` part, described in above link.
-#[cfg(not(feature = "parallel"))]
+#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
 const GF256_SIMD_MUL_TABLE_HIGH: [[u8; 2 * GF256_HALF_ORDER]; GF256_ORDER] = generate_gf256_simd_mul_table!(false);
 
 #[cfg(not(feature = "parallel"))]
@@ -77,7 +77,8 @@ fn gf256_inplace_mul_vec_by_scalar(vec: &mut [u8], scalar: u8) {
         return;
     }
 
-    if cfg!(target_arch = "x86_64") && is_x86_feature_detected!("avx2") {
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    if is_x86_feature_detected!("avx2") {
         unsafe {
             let l_tbl = _mm256_lddqu_si256(GF256_SIMD_MUL_TABLE_LOW[scalar as usize].as_ptr() as *const _);
             let h_tbl = _mm256_lddqu_si256(GF256_SIMD_MUL_TABLE_HIGH[scalar as usize].as_ptr() as *const _);
@@ -103,7 +104,12 @@ fn gf256_inplace_mul_vec_by_scalar(vec: &mut [u8], scalar: u8) {
                 *symbol = Gf256::mul_const(*symbol, scalar);
             });
         }
-    } else if cfg!(target_arch = "x86_64") && is_x86_feature_detected!("ssse3") {
+
+        return;
+    }
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    if is_x86_feature_detected!("ssse3") {
         unsafe {
             let l_tbl = _mm_lddqu_si128(GF256_SIMD_MUL_TABLE_LOW[scalar as usize].as_ptr() as *const _);
             let h_tbl = _mm_lddqu_si128(GF256_SIMD_MUL_TABLE_HIGH[scalar as usize].as_ptr() as *const _);
@@ -129,11 +135,13 @@ fn gf256_inplace_mul_vec_by_scalar(vec: &mut [u8], scalar: u8) {
                 *symbol = Gf256::mul_const(*symbol, scalar);
             });
         }
-    } else {
-        vec.iter_mut().for_each(|src_symbol| {
-            *src_symbol = Gf256::mul_const(*src_symbol, scalar);
-        });
+
+        return;
     }
+
+    vec.iter_mut().for_each(|src_symbol| {
+        *src_symbol = Gf256::mul_const(*src_symbol, scalar);
+    });
 }
 
 /// Given a byte array of arbitrary length, this function can be used to multiply each
@@ -165,7 +173,8 @@ pub fn gf256_mul_vec_by_scalar(vec: &[u8], scalar: u8) -> Vec<u8> {
 /// flag to hint the compiler so that it generates best code.
 #[cfg(not(feature = "parallel"))]
 pub fn gf256_inplace_add_vectors(vec_dst: &mut [u8], vec_src: &[u8]) {
-    if cfg!(target_arch = "x86_64") && is_x86_feature_detected!("avx2") {
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    if is_x86_feature_detected!("avx2") {
         unsafe {
             let mut iter_dst = vec_dst.chunks_exact_mut(2 * GF256_HALF_ORDER);
             let mut iter_src = vec_src.chunks_exact(2 * GF256_HALF_ORDER);
@@ -187,7 +196,12 @@ pub fn gf256_inplace_add_vectors(vec_dst: &mut [u8], vec_src: &[u8]) {
                 *a ^= b;
             });
         }
-    } else if cfg!(target_arch = "x86_64") && is_x86_feature_detected!("ssse3") {
+
+        return;
+    }
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    if is_x86_feature_detected!("ssse3") {
         unsafe {
             let mut iter_dst = vec_dst.chunks_exact_mut(GF256_HALF_ORDER);
             let mut iter_src = vec_src.chunks_exact(GF256_HALF_ORDER);
@@ -209,11 +223,13 @@ pub fn gf256_inplace_add_vectors(vec_dst: &mut [u8], vec_src: &[u8]) {
                 *a ^= b;
             });
         }
-    } else {
-        vec_dst.iter_mut().zip(vec_src).for_each(|(a, b)| {
-            *a ^= b;
-        });
+
+        return;
     }
+
+    vec_dst.iter_mut().zip(vec_src).for_each(|(a, b)| {
+        *a ^= b;
+    });
 }
 
 /// Gf(2^8) wrapper type.
