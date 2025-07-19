@@ -1,6 +1,6 @@
 [package]
 name = "rlnc"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2024"
 resolver = "3"
 rust-version = "1.85.0"
@@ -44,11 +44,13 @@ harness = false
 [profile.optimized]
 inherits = "release"
 codegen-units = 1
-lto = "thin"
+lto = true
 panic = "abort"
+opt-level = 3
 
 [profile.test-release]
 inherits = "release"
 debug = true
 debug-assertions = true
 overflow-checks = true
+opt-level = 3

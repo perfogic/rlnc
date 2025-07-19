@@ -5,7 +5,22 @@ use rand::Rng;
 use rand::distr::{Distribution, StandardUniform};
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
+#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
+use crate::common::macros::{generate_gf256_simd_mul_row, generate_gf256_simd_mul_table};
+
+#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
+use std::arch::x86_64::{
+    _mm_and_si128, _mm_lddqu_si128, _mm_set1_epi8, _mm_shuffle_epi8, _mm_srli_epi64, _mm_storeu_si128, _mm_xor_si128, _mm256_and_si256, _mm256_lddqu_si256,
+    _mm256_set1_epi8, _mm256_shuffle_epi8, _mm256_srli_epi64, _mm256_storeu_si256, _mm256_xor_si256,
+};
+
 const GF256_ORDER: usize = u8::MAX as usize + 1;
+
+#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
+const GF256_BIT_WIDTH: usize = u8::BITS as usize;
+
+#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
+const GF256_HALF_ORDER: usize = 1usize << (GF256_BIT_WIDTH / 2);
 
 const GF256_LOG_TABLE: [u8; GF256_ORDER] = [
     0, 0, 1, 25, 2, 50, 26, 198, 3, 223, 51, 238, 27, 104, 199, 75, 4, 100, 224, 14, 52, 141, 239, 129, 28, 193, 105, 248, 200, 8, 76, 113, 5, 138, 101, 47,
@@ -36,6 +51,186 @@ const GF256_EXP_TABLE: [u8; 2 * GF256_ORDER - 2] = [
     195, 155, 43, 86, 172, 69, 138, 9, 18, 36, 72, 144, 61, 122, 244, 245, 247, 243, 251, 235, 203, 139, 11, 22, 44, 88, 176, 125, 250, 233, 207, 131, 27, 54,
     108, 216, 173, 71, 142,
 ];
+
+/// AVX2 and SSSE3 optimized SIMD multiplication over GF(2^8) uses this lookup table, which is generated following
+/// https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1100-L1105.
+/// This table holds `htd->low` part, described in above link.
+#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
+const GF256_SIMD_MUL_TABLE_LOW: [[u8; 2 * GF256_HALF_ORDER]; GF256_ORDER] = generate_gf256_simd_mul_table!(true);
+
+/// AVX2 and SSSE3 optimized SIMD multiplication over GF(2^8) uses this lookup table, which is generated following
+/// https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1100-L1105.
+/// This table holds `htd->high` part, described in above link.
+#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
+const GF256_SIMD_MUL_TABLE_HIGH: [[u8; 2 * GF256_HALF_ORDER]; GF256_ORDER] = generate_gf256_simd_mul_table!(false);
+
+#[cfg(not(feature = "parallel"))]
+fn gf256_inplace_mul_vec_by_scalar(vec: &mut [u8], scalar: u8) {
+    if vec.is_empty() {
+        return;
+    }
+    if scalar == 0 {
+        vec.fill(0);
+        return;
+    }
+    if scalar == 1 {
+        return;
+    }
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    if is_x86_feature_detected!("avx2") {
+        unsafe {
+            let l_tbl = _mm256_lddqu_si256(GF256_SIMD_MUL_TABLE_LOW[scalar as usize].as_ptr() as *const _);
+            let h_tbl = _mm256_lddqu_si256(GF256_SIMD_MUL_TABLE_HIGH[scalar as usize].as_ptr() as *const _);
+            let l_mask = _mm256_set1_epi8(0x0f);
+
+            let mut iter = vec.chunks_exact_mut(2 * GF256_HALF_ORDER);
+
+            for chunk in iter.by_ref() {
+                let chunk_simd = _mm256_lddqu_si256(chunk.as_ptr() as *const _);
+
+                let chunk_simd_lo = _mm256_and_si256(chunk_simd, l_mask);
+                let chunk_simd_lo = _mm256_shuffle_epi8(l_tbl, chunk_simd_lo);
+
+                let chunk_simd_hi = _mm256_srli_epi64(chunk_simd, 4);
+                let chunk_simd_hi = _mm256_and_si256(chunk_simd_hi, l_mask);
+                let chunk_simd_hi = _mm256_shuffle_epi8(h_tbl, chunk_simd_hi);
+
+                let res = _mm256_xor_si256(chunk_simd_lo, chunk_simd_hi);
+                _mm256_storeu_si256(chunk.as_mut_ptr() as *mut _, res);
+            }
+
+            iter.into_remainder().iter_mut().for_each(|symbol| {
+                *symbol = Gf256::mul_const(*symbol, scalar);
+            });
+        }
+
+        return;
+    }
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    if is_x86_feature_detected!("ssse3") {
+        unsafe {
+            let l_tbl = _mm_lddqu_si128(GF256_SIMD_MUL_TABLE_LOW[scalar as usize].as_ptr() as *const _);
+            let h_tbl = _mm_lddqu_si128(GF256_SIMD_MUL_TABLE_HIGH[scalar as usize].as_ptr() as *const _);
+            let l_mask = _mm_set1_epi8(0x0f);
+
+            let mut iter = vec.chunks_exact_mut(GF256_HALF_ORDER);
+
+            for chunk in iter.by_ref() {
+                let chunk_simd = _mm_lddqu_si128(chunk.as_ptr() as *const _);
+
+                let chunk_simd_lo = _mm_and_si128(chunk_simd, l_mask);
+                let chunk_simd_lo = _mm_shuffle_epi8(l_tbl, chunk_simd_lo);
+
+                let chunk_simd_hi = _mm_srli_epi64(chunk_simd, 4);
+                let chunk_simd_hi = _mm_and_si128(chunk_simd_hi, l_mask);
+                let chunk_simd_hi = _mm_shuffle_epi8(h_tbl, chunk_simd_hi);
+
+                let res = _mm_xor_si128(chunk_simd_lo, chunk_simd_hi);
+                _mm_storeu_si128(chunk.as_mut_ptr() as *mut _, res);
+            }
+
+            iter.into_remainder().iter_mut().for_each(|symbol| {
+                *symbol = Gf256::mul_const(*symbol, scalar);
+            });
+        }
+
+        return;
+    }
+
+    vec.iter_mut().for_each(|src_symbol| {
+        *src_symbol = Gf256::mul_const(*src_symbol, scalar);
+    });
+}
+
+/// Given a byte array of arbitrary length, this function can be used to multiply each
+/// byte element with a single specific scalar, over GF(2^8), returning resulting vector.
+///
+/// In case this function runs on `x86_64` with `avx2` or `ssse3` features, it can use
+/// lookup-table assisted SIMD multiplication, inspired from https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1029-L1037.
+///
+/// You have to build with `RUSTFLAGS="-C target-cpu=native -C target-feature=+avx2,+ssse3"`flag
+/// to enjoy full benefits of compiler optimization.
+///
+/// I originally discovered this technique in https://www.snia.org/sites/default/files/files2/files2/SDC2013/presentations/NewThinking/EthanMiller_Screaming_Fast_Galois_Field%20Arithmetic_SIMD%20Instructions.pdf.
+#[cfg(not(feature = "parallel"))]
+pub fn gf256_mul_vec_by_scalar(vec: &[u8], scalar: u8) -> Vec<u8> {
+    let mut result = vec.to_vec();
+    gf256_inplace_mul_vec_by_scalar(&mut result, scalar);
+
+    result
+}
+
+/// Given two byte arrays of equal length, this routine performs element-wise
+/// addition over GF(2^8), mutating one of the operand vectors.
+///
+/// Note, addition over GF(2^8) is nothing but XOR-ing two operands. If this function
+/// runs on `x86_64` with `avx2` or `ssse3` features, it can perform fast SIMD addition
+/// using vector intrinsics.
+///
+/// You have to compile with `RUSTFLAGS="-C target-cpu=native -C target-feature=+avx2,+ssse3"`
+/// flag to hint the compiler so that it generates best code.
+#[cfg(not(feature = "parallel"))]
+pub fn gf256_inplace_add_vectors(vec_dst: &mut [u8], vec_src: &[u8]) {
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    if is_x86_feature_detected!("avx2") {
+        unsafe {
+            let mut iter_dst = vec_dst.chunks_exact_mut(2 * GF256_HALF_ORDER);
+            let mut iter_src = vec_src.chunks_exact(2 * GF256_HALF_ORDER);
+
+            while let Some(chunk_dst) = iter_dst.next()
+                && let Some(chunk_src) = iter_src.next()
+            {
+                let chunk_dst_simd = _mm256_lddqu_si256(chunk_dst.as_ptr() as *const _);
+                let chunk_src_simd = _mm256_lddqu_si256(chunk_src.as_ptr() as *const _);
+                let chunk_result = _mm256_xor_si256(chunk_dst_simd, chunk_src_simd);
+
+                _mm256_storeu_si256(chunk_dst.as_mut_ptr() as *mut _, chunk_result);
+            }
+
+            let remainder_dst = iter_dst.into_remainder();
+            let remainder_src = iter_src.remainder();
+
+            remainder_dst.iter_mut().zip(remainder_src).for_each(|(a, b)| {
+                *a ^= b;
+            });
+        }
+
+        return;
+    }
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    if is_x86_feature_detected!("ssse3") {
+        unsafe {
+            let mut iter_dst = vec_dst.chunks_exact_mut(GF256_HALF_ORDER);
+            let mut iter_src = vec_src.chunks_exact(GF256_HALF_ORDER);
+
+            while let Some(chunk_dst) = iter_dst.next()
+                && let Some(chunk_src) = iter_src.next()
+            {
+                let chunk_dst_simd = _mm_lddqu_si128(chunk_dst.as_ptr() as *const _);
+                let chunk_src_simd = _mm_lddqu_si128(chunk_src.as_ptr() as *const _);
+                let chunk_result = _mm_xor_si128(chunk_dst_simd, chunk_src_simd);
+
+                _mm_storeu_si128(chunk_dst.as_mut_ptr() as *mut _, chunk_result);
+            }
+
+            let remainder_dst = iter_dst.into_remainder();
+            let remainder_src = iter_src.remainder();
+
+            remainder_dst.iter_mut().zip(remainder_src).for_each(|(a, b)| {
+                *a ^= b;
+            });
+        }
+
+        return;
+    }
+
+    vec_dst.iter_mut().zip(vec_src).for_each(|(a, b)| {
+        *a ^= b;
+    });
+}
 
 /// Gf(2^8) wrapper type.
 #[derive(Default, Clone, Copy, Debug)]
@@ -69,9 +264,21 @@ impl Gf256 {
         Gf256::new(2)
     }
 
+    /// Compile-time executable multiplication of two bytes, over GF(2^8).
+    pub const fn mul_const(a: u8, b: u8) -> u8 {
+        if a == 0 || b == 0 {
+            return 0;
+        }
+
+        let l = GF256_LOG_TABLE[a as usize] as usize;
+        let r = GF256_LOG_TABLE[b as usize] as usize;
+
+        GF256_EXP_TABLE[l + r]
+    }
+
     /// Computes the multiplicative inverse of the element. Returns `None` for the zero element.
-    pub fn inv(self) -> Option<Self> {
-        if self == Self::zero() {
+    pub const fn inv(self) -> Option<Self> {
+        if self.val == 0 {
             return None;
         }
 
@@ -123,14 +330,9 @@ impl Mul for Gf256 {
 
     /// Performs multiplication of two Gf256 elements using logarithm and exponentiation tables.
     fn mul(self, rhs: Self) -> Self::Output {
-        if self == Self::zero() || rhs == Self::zero() {
-            return Self::zero();
+        Gf256 {
+            val: Self::mul_const(self.val, rhs.val),
         }
-
-        let l = GF256_LOG_TABLE[self.val as usize] as usize;
-        let r = GF256_LOG_TABLE[rhs.val as usize] as usize;
-
-        Gf256 { val: GF256_EXP_TABLE[l + r] }
     }
 }
 
