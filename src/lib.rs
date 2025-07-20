@@ -93,9 +93,9 @@
 //!
 //! ```toml
 //! [dependencies]
-//! rlnc = "=0.6.0" # Use the latest version
+//! rlnc = "=0.6.1" # Use the latest version
 //! # or
-//! rlnc = { version = "=0.6.0", features = "parallel" } # Offers much faster encoding/ recoding.
+//! rlnc = { version = "=0.6.1", features = "parallel" } # Offers much faster encoding/ recoding.
 //!
 //! rand = "=0.9.1" # Required for random number generation
 //! ```

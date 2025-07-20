@@ -6,7 +6,7 @@ Random Linear Network Coding
 
 For a quick understanding of RLNC, have a look at my blog post @ https://itzmeanjan.in/pages/rlnc-in-depth.html.
 
-Random Linear Network Coding (RLNC) excels in highly dynamic and lossy environments like multicast, peer-to-peer networks, and distributed storage, due to its "any K of N" property and inherent recoding capability. Unlike Reed-Solomon, which requires specific symbols for deterministic recovery, RLNC allows decoding from *any* set of linearly independent packets. Compared to Fountain Codes, RLNC offers robust algebraic linearity with coding vector overhead, whereas Fountain codes prioritize very low decoding complexity and indefinite symbol generation, often for large-scale broadcasts.
+Random Linear Network Coding (RLNC) excels in highly dynamic and lossy environments like multicast, peer-to-peer networks, and distributed storage, due to interesting properties such as encoding with random-sampled coefficients, any `k` out of `n` coded-pieces are sufficient to recover and recoding new pieces with coded-pieces. Unlike Reed-Solomon, which requires specific symbols for deterministic recovery, RLNC allows decoding from *any* set of linearly independent packets. Compared to Fountain Codes, RLNC offers robust algebraic linearity with coding vector overhead, whereas Fountain codes prioritize very low decoding complexity and indefinite symbol generation, often for large-scale broadcasts.
 
 ## Features
 For now this crate implements only **Full RLNC** scheme.
@@ -38,6 +38,34 @@ cargo install wasmtime-cli --locked
 make test-wasm
 ```
 
+```bash
+running 13 tests
+test full::decoder::tests::test_decoder_decode_invalid_piece_length ... ok
+test full::recoder::tests::test_recoder_getters ... ok
+test full::encoder::tests::test_encoder_code_with_coding_vector_invalid_inputs ... ok
+test full::decoder::tests::test_decoder_new_invalid_inputs ... ok
+test full::encoder::tests::test_encoder_without_padding_invalid_data ... ok
+test full::encoder::tests::test_encoder_getters ... ok
+test full::decoder::tests::test_decoder_getters ... ok
+test full::encoder::tests::test_encoder_new_invalid_inputs ... ok
+test full::recoder::tests::test_recoder_new_invalid_inputs ... ok
+test common::gf256::test::prop_test_gf256_operations ... ok
+test full::tests::prop_test_rlnc_encoder_recoder_decoder ... ok
+test full::tests::prop_test_rlnc_encoder_decoder ... ok
+test full::tests::prop_test_rlnc_decoding_with_useless_pieces ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 33.62s
+
+   Doc-tests rlnc
+
+running 3 tests
+test src/common/macros.rs - common::macros (line 22) ... ignored
+test src/common/macros.rs - common::macros (line 8) ... ignored
+test src/lib.rs - (line 50) ... ok
+
+test result: ok. 1 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s
+```
+
 ### Code Coverage
 To generate a detailed code coverage report in HTML format, use [cargo-tarpaulin](https://github.com/xd009642/tarpaulin):
 
@@ -51,48 +79,21 @@ make coverage
 Coverage Results:
 || Tested/Total Lines:
 || src/common/errors.rs: 0/1
-|| src/common/gf256.rs: 10/11
+|| src/common/gf256.rs: 34/47
 || src/full/decoder.rs: 67/73
-|| src/full/encoder.rs: 29/31
+|| src/full/encoder.rs: 29/29
 || src/full/recoder.rs: 30/36
-||
-89.47% coverage, 136/152 lines covered
+|| 
+86.02% coverage, 160/186 lines covered
 ```
 
 This will create an HTML coverage report at `tarpaulin-report.html` that you can open in your web browser to view detailed line-by-line coverage information for all source files.
-
-```bash
-running 13 tests
-test full::decoder::tests::test_decoder_decode_invalid_piece_length ... ok
-test full::decoder::tests::test_decoder_new_invalid_inputs ... ok
-test full::encoder::tests::test_encoder_getters ... ok
-test full::encoder::tests::test_encoder_code_with_coding_vector_invalid_inputs ... ok
-test full::encoder::tests::test_encoder_without_padding_invalid_data ... ok
-test full::recoder::tests::test_recoder_getters ... ok
-test full::recoder::tests::test_recoder_new_invalid_inputs ... ok
-test full::encoder::tests::test_encoder_new_invalid_inputs ... ok
-test full::decoder::tests::test_decoder_getters ... ok
-test common::gf256::test::prop_test_gf256_operations ... ok
-test full::tests::prop_test_rlnc_encoder_decoder ... ok
-test full::tests::prop_test_rlnc_encoder_recoder_decoder ... ok
-test full::tests::prop_test_rlnc_decoding_with_useless_pieces has been running for over 60 seconds
-test full::tests::prop_test_rlnc_decoding_with_useless_pieces ... ok
-
-test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 69.01s
-
-   Doc-tests rlnc
-
-running 1 test
-test src/lib.rs - (line 50) ... ok
-
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-```
 
 > [!NOTE]
 > There is a help menu, which introduces you to all available commands; just run `$ make` from the root directory of this project.
 
 ## Benchmarking
-Performance benchmarks are included to evaluate the efficiency of the RLNC scheme. These benchmarks measure the time taken for various RLNC operations.
+Performance benchmarks for several input configurations are included to evaluate the efficiency of this RLNC implementation.
 
 To run the benchmarks, execute the following command from the root of the project:
 
@@ -107,24 +108,13 @@ make bench # First with `default` feature, then with `parallel` feature enabled.
 
 Running benchmarks on `Linux 6.14.0-24-generic x86_64`, compiled with `rustc 1.88.0 (6b00bc388 2025-06-23)`.
 
-- **Full RLNC Encoder Performance**
-  The encoder demonstrates excellent performance.
-  - **`default` Feature:** Consistently achieves throughputs between **4.3 GiB/s and 18.6 GiB/s**. Encoding 1MB of data typically takes around 50-160 microseconds, and for 32MB, it takes 3.3-7.7 milliseconds.
-  - **`parallel` Feature (Rayon):** Provides a significant performance boost, reaching throughputs between **3.4 GiB/s and 9.7 GiB/s**. Encoding 1MB of data is much faster, typically taking 100-280 microseconds, and for 32MB, it takes 3.2-8.6 milliseconds.
-  - **Impact of Number of Pieces:** For both default and parallel implementations, the number of pieces the data is split into has a minimal impact on the encoding speed, with throughputs remaining consistently high across various piece counts.
+Component | With `default` feature | With `parallel` feature, using rayon-based data-parallelism | Impact of number of pieces on performance
+--- | --- | --- | ---
+Full RLNC Encoder | Throughput of 4.3 GiB/s and 18.6 GiB/s | Throughput of 3.4 GiB/s and 9.7 GiB/s | The number of pieces original data got split into has a **minimal** impact on the encoding speed.
+Full RLNC Recoder | Throughput of 5.2 GiB/s and 17.0 GiB/s | Throughput of 2.9 GiB/s and 7.9 GiB/s | Similar to the encoder, the recoder's performance remains largely consistent regardless of how many pieces the original data is split into.
+Full RLNC Decoder | Throughput of 4 MiB/s to 74 MiB/s, **considerably slower** | **Doesn't yet implement a parallel decoding mode** | As the number of pieces increases, the decoding time increases substantially, leading to a considerable drop in throughput. This indicates that decoding is the most computationally intensive part of the full RLNC scheme, and its performance is inversely proportional to the number of pieces.
 
-- **Full RLNC Recoder Performance**
-  The recoder also demonstrates excellent speed.
-  - **`default` Feature:** Achieves throughputs between **5.2 GiB/s and 17.0 GiB/s**. Recoding 1MB of data typically takes 30-70 microseconds, and for 32MB, it takes 1.7-3.4 milliseconds.
-  - **`parallel` Feature (Rayon):** Demonstrates substantial improvements, reaching throughputs between **2.9 GiB/s and 7.9 GiB/s**. Recoding 1MB of data is very quick, taking approximately 85-190 microseconds, and for 32MB, it takes 2.0-5.6 milliseconds.
-  - **Impact of Number of Pieces:** Similar to the encoder, the recoder's performance remains largely consistent regardless of how many pieces the data is split into, demonstrating robust speed across different configurations.
-
-- **Full RLNC Decoder Performance**
-  The decoder's performance is considerably slower compared to both the encoder and recoder, as expected due to the computational complexity of Gaussian elimination.
-  - **Default Feature (No Parallelism):** Throughputs range from **4 MiB/s to 74 MiB/s**. Decoding 1MB of data can take a significant amount of time, from about 13-18 milliseconds (when split into 16 pieces) up to over 230-250 milliseconds (when split into 256 pieces). For larger files like 32MB, decoding can extend to several seconds (e.g., over 7 seconds for 256 pieces).
-  - **Impact of Number of Pieces:** The most significant parameter impact is observed in the decoding phase. As the number of pieces increases, the decoding time increases substantially, leading to a considerable drop in throughput. This indicates that decoding is the most computationally intensive part of the full RLNC process, and its performance is inversely proportional to the number of pieces. Parallelism benefits from this operation are minimal due to the sequential nature of Gaussian elimination.
-
-In summary, the full RLNC implementation demonstrates excellent encoding and recoding speeds, consistently achieving GiB/s throughputs with minimal sensitivity to the number of data pieces. The `parallel` feature, leveraging Rust `rayon` data-parallelism framework, provides substantial speedups for both encoding and recoding. However, decoding remains a much slower operation, with its performance significantly diminishing as the data is split into a greater number of pieces, and currently does **not** implement a parallel decoding algorithm.
+In summary, the full RLNC implementation demonstrates excellent encoding and recoding speeds, consistently achieving GiB/s throughputs with minimal sensitivity to the number of data pieces. The `parallel` feature, leveraging Rust `rayon` data-parallelism framework, also provides good performance for both encoding and recoding. However, decoding remains a much slower operation, with its performance significantly diminishing as the data is split into a greater number of pieces, and currently does **not** implement a parallel decoding algorithm.
 
 #### Full RLNC Encoder
 
@@ -863,13 +853,13 @@ full_rlnc_decoder                             fastest       â”‚ slowest       â”
 
 ## Usage
 
-To use `rlnc` in your Rust project, add it as a dependency in your `Cargo.toml`:
+To use `rlnc` library crate in your Rust project, add it as a dependency in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rlnc = "=0.6.0"                                      # Use the latest version available on crates.io.
+rlnc = "=0.6.1"                                      # On x86 target, it offers AVX2 and SSSE3 optimization for fast encoding/ recoding.
 # or
-rlnc = { version = "=0.6.0", features = "parallel" } # Uses `rayon`-based data-parallelism for much faster encoding/ recoding.
+rlnc = { version = "=0.6.1", features = "parallel" } # Uses `rayon`-based data-parallelism for fast encoding/ recoding.
 
 rand = { version = "=0.9.1" } # Required for random number generation
 ```
