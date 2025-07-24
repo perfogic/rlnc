@@ -34,16 +34,23 @@ jobs:
         with:
           toolchain: 1.85.0 # MSRV of this project
 
-      - name: Add WebAssembly compilation target
-        run: |
-          rustup target add wasm32-wasip1
-          cargo install wasmtime-cli --locked
-
       - name: Build and Test on ${{ matrix.os }}
         run: make test
 
-      - name: Build and Test for WebAssembly target, on ${{ matrix.os }}
+      - name: Run examples on ${{ matrix.os }}
+        run: make example
+
+      - name: Add WebAssembly compilation target
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          rustup default 1.86.0 # MSRV for wasmtime-cli
+          rustup target add wasm32-wasip1
+          cargo install wasmtime-cli --locked
+
+      - name: Build and Test in WebAssembly environment
+        if: matrix.os == 'ubuntu-latest'
         run: make test-wasm
 
-      - name: Run examples
-        run: make example
+      - name: Run examples in WebAssembly environment
+        if: matrix.os == 'ubuntu-latest'
+        run: make example-wasm
