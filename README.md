@@ -110,11 +110,11 @@ Running benchmarks on `Linux 6.14.0-24-generic x86_64`, compiled with `rustc 1.8
 
 Component | With `default` feature | With `parallel` feature, using rayon-based data-parallelism | Impact of number of pieces on performance
 --- | --- | --- | ---
-Full RLNC Encoder | Throughput of 4.3 GiB/s and 18.6 GiB/s | Throughput of 3.4 GiB/s and 9.7 GiB/s | The number of pieces original data got split into has a **minimal** impact on the encoding speed.
-Full RLNC Recoder | Throughput of 5.2 GiB/s and 17.0 GiB/s | Throughput of 2.9 GiB/s and 7.9 GiB/s | Similar to the encoder, the recoder's performance remains largely consistent regardless of how many pieces the original data is split into.
+Full RLNC Encoder | Throughput of 4.3 GiB/s to 18.6 GiB/s | Throughput of 3.4 GiB/s to 9.7 GiB/s | The number of pieces original data got split into has a **minimal** impact on the encoding speed.
+Full RLNC Recoder | Throughput of 5.2 GiB/s to 17.0 GiB/s | Throughput of 2.9 GiB/s to 7.9 GiB/s | Similar to the encoder, the recoder's performance remains largely consistent regardless of how many pieces the original data is split into.
 Full RLNC Decoder | Throughput of 4 MiB/s to 74 MiB/s, **considerably slower** | **Doesn't yet implement a parallel decoding mode** | As the number of pieces increases, the decoding time increases substantially, leading to a considerable drop in throughput. This indicates that decoding is the most computationally intensive part of the full RLNC scheme, and its performance is inversely proportional to the number of pieces.
 
-In summary, the full RLNC implementation demonstrates excellent encoding and recoding speeds, consistently achieving GiB/s throughputs with minimal sensitivity to the number of data pieces. The `parallel` feature, leveraging Rust `rayon` data-parallelism framework, also provides good performance for both encoding and recoding. However, decoding remains a much slower operation, with its performance significantly diminishing as the data is split into a greater number of pieces, and currently does **not** implement a parallel decoding algorithm.
+In summary, the full RLNC implementation demonstrates excellent encoding and recoding speeds, consistently achieving GiB/s throughputs with minimal sensitivity to the number of data pieces. The `parallel` feature, leveraging Rust `rayon` data-parallelism framework, also provides good performance for both encoding and recoding. Whether you want to use that feature, completely depends on your usecase. However, decoding remains a much slower operation, with its performance significantly diminishing as the data is split into a greater number of pieces, and currently does **not** implement a parallel decoding algorithm.
 
 #### Full RLNC Encoder
 
@@ -857,9 +857,9 @@ To use `rlnc` library crate in your Rust project, add it as a dependency in your
 
 ```toml
 [dependencies]
-rlnc = "=0.6.1"                                      # On x86 target, it offers AVX2 and SSSE3 optimization for fast encoding/ recoding.
+rlnc = "=0.7.0"                                      # On x86 target, it offers AVX2 and SSSE3 optimization for fast encoding/ recoding.
 # or
-rlnc = { version = "=0.6.1", features = "parallel" } # Uses `rayon`-based data-parallelism for fast encoding/ recoding.
+rlnc = { version = "=0.7.0", features = "parallel" } # Uses `rayon`-based data-parallelism for fast encoding/ recoding.
 
 rand = { version = "=0.9.1" } # Required for random number generation
 ```

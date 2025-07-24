@@ -179,9 +179,7 @@ pub fn gf256_inplace_add_vectors(vec_dst: &mut [u8], vec_src: &[u8]) {
             let mut iter_dst = vec_dst.chunks_exact_mut(2 * GF256_HALF_ORDER);
             let mut iter_src = vec_src.chunks_exact(2 * GF256_HALF_ORDER);
 
-            while let Some(chunk_dst) = iter_dst.next()
-                && let Some(chunk_src) = iter_src.next()
-            {
+            for (chunk_dst, chunk_src) in iter_dst.by_ref().zip(iter_src.by_ref()) {
                 let chunk_dst_simd = _mm256_lddqu_si256(chunk_dst.as_ptr() as *const _);
                 let chunk_src_simd = _mm256_lddqu_si256(chunk_src.as_ptr() as *const _);
                 let chunk_result = _mm256_xor_si256(chunk_dst_simd, chunk_src_simd);
@@ -206,9 +204,7 @@ pub fn gf256_inplace_add_vectors(vec_dst: &mut [u8], vec_src: &[u8]) {
             let mut iter_dst = vec_dst.chunks_exact_mut(GF256_HALF_ORDER);
             let mut iter_src = vec_src.chunks_exact(GF256_HALF_ORDER);
 
-            while let Some(chunk_dst) = iter_dst.next()
-                && let Some(chunk_src) = iter_src.next()
-            {
+            for (chunk_dst, chunk_src) in iter_dst.by_ref().zip(iter_src.by_ref()) {
                 let chunk_dst_simd = _mm_lddqu_si128(chunk_dst.as_ptr() as *const _);
                 let chunk_src_simd = _mm_lddqu_si128(chunk_src.as_ptr() as *const _);
                 let chunk_result = _mm_xor_si128(chunk_dst_simd, chunk_src_simd);

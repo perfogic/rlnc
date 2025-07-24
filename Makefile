@@ -42,4 +42,7 @@ clean: ## Removes cargo target directory
 example: ## Runs the Full RLNC example program
 	RUSTFLAGS="-C target-cpu=native" cargo run --example full_rlnc
 	RUSTFLAGS="-C target-cpu=native" cargo run --example full_rlnc --features parallel
+
+.PHONY: example-wasm
+example-wasm: ## Runs the Full RLNC example program in WASM environment
 	cargo run --example full_rlnc --target wasm32-wasip1 --no-default-features

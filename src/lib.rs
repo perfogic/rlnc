@@ -1,15 +1,14 @@
 //! # rlnc: Random Linear Network Coding
 //!
 //! `rlnc` is a Rust library that provides an implementation of Random Linear Network Coding (RLNC)
-//! over finite field GF(2^8). RLNC is a technique where data is split into smaller pieces, treated
-//! as vectors over GF(2^8). Source node in a network creates encoded packets by computing random
-//! linear combinations of those pieces using randomly sampled coefficients. These encoded packets,
-//! tagged with coefficient information, often called coded pieces, are forwarded to peers.
-//! Intermediate nodes in the network can combine any number of coded pieces to create new coded pieces.
-//! Receiving nodes decode the original data by collecting senough independent combinations to solve the
-//! linear system of equations. RLNC enhances network throughput, robustness, and efficiency, particularly
-//! in lossy or dynamic networks. It’s used in applications like video streaming, distributed storage, and
-//! satellite communications, improving reliability and reducing latency.
+//! over finite field GF(2^8). Data owner creates encoded (i.e. erasure-coded) pieces by computing
+//! random linear combinations of original data split into smaller pieces using random sampled coefficients.
+//! These encoded pieces, tagged with coefficient vectors, often called coded pieces, are forwarded to peers.
+//! Intermediate nodes in the network can combine any number of coded pieces to create new coded pieces, without
+//! ever decoding to original data. Receiving nodes decode the original data by collecting enough linearly independent
+//! combinations to solve the linear system of equations. RLNC enhances network throughput, robustness, and efficiency,
+//! particularly in lossy or dynamic networks. It can be used in applications like video streaming, distributed storage,
+//! and satellite communications, improving reliability and reducing latency.
 //!
 //! ## How it Works
 //!
@@ -57,8 +56,8 @@
 //! let mut rng = rand::rng();
 //!
 //! // 1. Define original data parameters
-//! let original_data_len = 1024 * 10; // 10 KB
-//! let piece_count = 32; // Data will be split into 32 pieces
+//! let original_data_len = 10 * 1024; // 10 KB
+//! let piece_count = 32;              // Data will be split into 32 pieces
 //! let original_data: Vec<u8> = (0..original_data_len).map(|_| rng.random()).collect();
 //! let original_data_copy = original_data.clone();
 //!
@@ -71,9 +70,10 @@
 //! // 4. Generate coded pieces and feed them to the decoder until decoding is complete
 //! while !decoder.is_already_decoded() {
 //!     let coded_piece = encoder.code(&mut rng);
+//!
 //!     match decoder.decode(&coded_piece) {
-//!         Ok(_) => {}, // Piece was useful
-//!         Err(RLNCError::PieceNotUseful) => {}, // Piece was not useful (linearly dependent)
+//!         Ok(_) => {},                                // Piece was useful
+//!         Err(RLNCError::PieceNotUseful) => {},       // Piece was not useful (linearly dependent)
 //!         Err(RLNCError::ReceivedAllPieces) => break, // Already decoded
 //!         Err(e) => panic!("Unexpected error during decoding: {e:?}"),
 //!     }
@@ -93,11 +93,11 @@
 //!
 //! ```toml
 //! [dependencies]
-//! rlnc = "=0.6.1" # Use the latest version
+//! rlnc = "=0.7.0"                                      # On x86 target, it offers AVX2 and SSSE3 optimization for fast encoding/ recoding.
 //! # or
-//! rlnc = { version = "=0.6.1", features = "parallel" } # Offers much faster encoding/ recoding.
+//! rlnc = { version = "=0.7.0", features = "parallel" } # Uses `rayon`-based data-parallelism for fast encoding/ recoding.
 //!
-//! rand = "=0.9.1" # Required for random number generation
+//! rand = { version = "=0.9.1" } # Required for random number generation
 //! ```
 //!
 //! For more see README in `rlnc` repository @ <https://github.com/itzmeanjan/rlnc>.

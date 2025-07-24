@@ -26,22 +26,35 @@ jobs:
 
             windows-latest, # x86_64
             windows-11-arm, # arm64
-          ]
+        ]
+        rust: [
+          1.85.0, # MSRV of this project
+          stable
+        ]
+      max-parallel: 4
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+
+      - name: Build and Test on ${{ matrix.os }} with Rust ${{ matrix.rust }}
+        run: make test
+
+      - name: Run examples on ${{ matrix.os }} with Rust ${{ matrix.rust }}
+        run: make example
 
       - name: Add WebAssembly compilation target
+        if: matrix.os == 'ubuntu-latest' && matrix.rust == 'stable' # Because MSRV of wasmtime-cli is 1.86.0
         run: |
           rustup target add wasm32-wasip1
           cargo install wasmtime-cli --locked
 
-      - name: Build and Test on ${{ matrix.os }}
-        run: make test
-
-      - name: Build and Test for WebAssembly target, on ${{ matrix.os }}
+      - name: Build and Test in WebAssembly environment
+        if: matrix.os == 'ubuntu-latest' && matrix.rust == 'stable'
         run: make test-wasm
 
-      - name: Run examples
-        run: make example
+      - name: Run examples in WebAssembly environment
+        if: matrix.os == 'ubuntu-latest' && matrix.rust == 'stable'
+        run: make example-wasm
