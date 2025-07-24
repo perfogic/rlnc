@@ -52,3 +52,5 @@ impl std::fmt::Display for RLNCError {
         }
     }
 }
+
+impl std::error::Error for RLNCError {}
