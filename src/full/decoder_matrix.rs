@@ -65,10 +65,17 @@ impl DecoderMatrix {
     /// Panics if either row index is out of bounds.
     pub fn swap_rows(&mut self, row1_idx: usize, row2_idx: usize) -> &mut Self {
         let row1_begins_at = row1_idx * self.cols;
-        let row2_begins_at = row2_idx * self.cols;
+        let row1_ends_at = row1_begins_at + self.cols;
 
-        // Swap each element in the two rows
-        (0..self.cols).for_each(|cidx| self.elements.swap(row1_begins_at + cidx, row2_begins_at + cidx));
+        let row2_begins_at = row2_idx * self.cols;
+        let row2_ends_at = row2_begins_at + self.cols;
+
+        let (left, right) = unsafe { self.elements.split_at_mut_unchecked(row1_ends_at) };
+
+        let left_slice = &mut left[row1_begins_at..];
+        let right_slice = &mut right[(row2_begins_at - row1_ends_at)..(row2_ends_at - row1_ends_at)];
+
+        left_slice.swap_with_slice(right_slice);
 
         self
     }
