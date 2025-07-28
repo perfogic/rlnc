@@ -1,4 +1,7 @@
-use crate::{RLNCError, common::gf256::Gf256};
+use crate::{
+    RLNCError,
+    common::gf256::{Gf256, gf256_inplace_mul_vec_by_scalar, gf256_inplace_mul_vec_by_scalar_then_add_into_vec},
+};
 use std::ops::{Index, IndexMut};
 
 #[derive(Clone, Debug)]
@@ -136,10 +139,20 @@ impl DecoderMatrix {
                     continue;
                 }
 
-                let quotient = (self[(j, i)] / self[(i, i)]).unwrap();
-                for k in i..self.cols {
-                    self[(j, k)] = self[(j, k)] + self[(i, k)] * quotient;
-                }
+                let quotient = unsafe { (self[(j, i)] / self[(i, i)]).unwrap_unchecked().get() };
+
+                let i_th_row_starts_at = i * self.cols;
+                let i_th_row_ends_at = i_th_row_starts_at + self.cols;
+
+                let j_th_row_starts_at = j * self.cols;
+                let j_th_row_ends_at = j_th_row_starts_at + self.cols;
+
+                let (left, right) = self.elements.split_at_mut(i_th_row_ends_at);
+
+                let i_th_row = &left[(i_th_row_starts_at + i)..];
+                let j_th_row = &mut right[(j_th_row_starts_at - i_th_row_ends_at + i)..(j_th_row_ends_at - i_th_row_ends_at)];
+
+                gf256_inplace_mul_vec_by_scalar_then_add_into_vec(j_th_row, i_th_row, quotient);
             }
         }
 
@@ -162,25 +175,34 @@ impl DecoderMatrix {
                     continue;
                 }
 
-                let quotient = (self[(j, i)] / self[(i, i)]).unwrap();
-                for k in i..self.cols {
-                    self[(j, k)] = self[(j, k)] + self[(i, k)] * quotient;
-                }
+                let quotient = unsafe { (self[(j, i)] / self[(i, i)]).unwrap_unchecked().get() };
+
+                let j_th_row_starts_at = j * self.cols;
+                let j_th_row_ends_at = j_th_row_starts_at + self.cols;
+
+                let i_th_row_starts_at = i * self.cols;
+                let i_th_row_ends_at = i_th_row_starts_at + self.cols;
+
+                let (left, right) = self.elements.split_at_mut(j_th_row_ends_at);
+
+                let j_th_row = &mut left[(j_th_row_starts_at + i)..];
+                let i_th_row = &right[(i_th_row_starts_at - j_th_row_ends_at + i)..(i_th_row_ends_at - j_th_row_ends_at)];
+
+                gf256_inplace_mul_vec_by_scalar_then_add_into_vec(j_th_row, i_th_row, quotient);
             }
 
             if self[(i, i)] == Gf256::one() {
                 continue;
             }
 
-            let inv = self[(i, i)].inv().unwrap();
+            let inv = unsafe { self[(i, i)].inv().unwrap_unchecked().get() };
             self[(i, i)] = Gf256::one();
 
-            for j in (i + 1)..self.cols {
-                if self[(i, j)] == Gf256::zero() {
-                    continue;
-                }
-                self[(i, j)] = self[(i, j)] * inv;
-            }
+            let i_th_row_starts_at = i * self.cols;
+            let i_th_row_ends_at = i_th_row_starts_at + self.cols;
+
+            let i_th_row = &mut self.elements[(i_th_row_starts_at + (i + 1))..i_th_row_ends_at];
+            gf256_inplace_mul_vec_by_scalar(i_th_row, inv);
         }
 
         self

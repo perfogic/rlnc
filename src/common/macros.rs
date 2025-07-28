@@ -30,7 +30,7 @@
 //!     .collect::<Vec<Vec<u8>>>();
 //! ```
 
-#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 macro_rules! generate_gf256_simd_mul_row {
     ($a:expr,$is_low_part:expr) => {
         [
@@ -75,7 +75,7 @@ macro_rules! generate_gf256_simd_mul_row {
     };
 }
 
-#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 macro_rules! generate_gf256_simd_mul_table {
     ($is_low_part:expr) => {
         [
@@ -339,8 +339,8 @@ macro_rules! generate_gf256_simd_mul_table {
     };
 }
 
-#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub(crate) use generate_gf256_simd_mul_row;
 
-#[cfg(all(not(feature = "parallel"), any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub(crate) use generate_gf256_simd_mul_table;
