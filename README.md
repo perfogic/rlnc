@@ -2,11 +2,11 @@
 Random Linear Network Coding
 
 ## Introduction
-`rlnc` is a Rust library that implements Random Linear Network Coding (RLNC) over $GF(2^8)$ with primitive polynomial $x^8 + x^4 + x^3 + x^2 + 1$. This library provides functionalities for encoding data, decoding coded pieces to recover the original data, and recoding existing coded pieces.
+`rlnc` is a Rust library crate that implements Random Linear Network Coding (RLNC) over $GF(2^8)$ with primitive polynomial $x^8 + x^4 + x^3 + x^2 + 1$. This library provides functionalities for erasure-coding data, reconstructing original data from coded pieces, and recoding existing coded pieces to new erasure-coded pieces, without ever decoding it back to original data.
 
 For a quick understanding of RLNC, have a look at my blog post @ https://itzmeanjan.in/pages/rlnc-in-depth.html.
 
-Random Linear Network Coding (RLNC) excels in highly dynamic and lossy environments like multicast, peer-to-peer networks, and distributed storage, due to interesting properties such as encoding with random-sampled coefficients, any `k` out of `n` coded-pieces are sufficient to recover and recoding new pieces with coded-pieces. Unlike Reed-Solomon, which requires specific symbols for deterministic recovery, RLNC allows decoding from *any* set of linearly independent packets. Compared to Fountain Codes, RLNC offers robust algebraic linearity with coding vector overhead, whereas Fountain codes prioritize very low decoding complexity and indefinite symbol generation, often for large-scale broadcasts.
+Random Linear Network Coding (RLNC) excels in highly dynamic and lossy environments like multicast, peer-to-peer networks, and distributed storage, due to interesting properties such as encoding with random-sampled coefficients, any `k` out of `n` coded-pieces are sufficient to recover and recoding new pieces with existing erasure-coded pieces. Unlike Reed-Solomon, which requires specific symbols for deterministic recovery, RLNC allows decoding from *any* set of linearly independent packets. Compared to Fountain Codes, RLNC offers robust algebraic linearity with coding vector overhead, whereas Fountain codes prioritize very low decoding complexity and indefinite symbol generation, often for large-scale broadcasts.
 
 ## Features
 For now this crate implements only **Full RLNC** scheme.
@@ -26,7 +26,7 @@ rustc 1.88.0 (6b00bc388 2025-06-23)
 ```
 
 ## Testing
-For ensuring functional correctness of RLNC operations, the library includes a comprehensive test suite. Run all the tests.
+For ensuring functional correctness of RLNC operations, the library includes a comprehensive test suite. Run all the tests by running following commands.
 
 ```bash
 # Testing on host, first with `default` feature, then with `parallel` feature enabled.
@@ -39,29 +39,31 @@ make test-wasm
 ```
 
 ```bash
-running 13 tests
+running 14 tests
 test full::decoder::tests::test_decoder_decode_invalid_piece_length ... ok
-test full::recoder::tests::test_recoder_getters ... ok
-test full::encoder::tests::test_encoder_code_with_coding_vector_invalid_inputs ... ok
 test full::decoder::tests::test_decoder_new_invalid_inputs ... ok
-test full::encoder::tests::test_encoder_without_padding_invalid_data ... ok
-test full::encoder::tests::test_encoder_getters ... ok
+test full::encoder::tests::test_encoder_code_with_coding_vector_invalid_inputs ... ok
 test full::decoder::tests::test_decoder_getters ... ok
+test full::encoder::tests::test_encoder_getters ... ok
+test full::encoder::tests::test_encoder_without_padding_invalid_data ... ok
 test full::encoder::tests::test_encoder_new_invalid_inputs ... ok
+test full::recoder::tests::test_recoder_getters ... ok
 test full::recoder::tests::test_recoder_new_invalid_inputs ... ok
 test common::gf256::test::prop_test_gf256_operations ... ok
-test full::tests::prop_test_rlnc_encoder_recoder_decoder ... ok
 test full::tests::prop_test_rlnc_encoder_decoder ... ok
+test full::decoder_matrix::test::prop_test_rref_is_idempotent ... ok
+test full::tests::prop_test_rlnc_encoder_recoder_decoder ... ok
+test full::tests::prop_test_rlnc_decoding_with_useless_pieces has been running for over 60 seconds
 test full::tests::prop_test_rlnc_decoding_with_useless_pieces ... ok
 
-test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 33.62s
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 63.59s
 
    Doc-tests rlnc
 
 running 3 tests
-test src/common/macros.rs - common::macros (line 22) ... ignored
-test src/common/macros.rs - common::macros (line 8) ... ignored
-test src/lib.rs - (line 50) ... ok
+test src/common/simd_mul_table.rs - common::simd_mul_table (line 22) ... ignored
+test src/common/simd_mul_table.rs - common::simd_mul_table (line 8) ... ignored
+test src/lib.rs - (line 49) ... ok
 
 test result: ok. 1 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s
 ```
@@ -79,12 +81,14 @@ make coverage
 Coverage Results:
 || Tested/Total Lines:
 || src/common/errors.rs: 0/1
-|| src/common/gf256.rs: 34/47
-|| src/full/decoder.rs: 67/73
+|| src/common/gf256.rs: 9/11
+|| src/common/simd.rs: 45/67
+|| src/full/decoder.rs: 28/33
+|| src/full/decoder_matrix.rs: 49/55
 || src/full/encoder.rs: 29/29
 || src/full/recoder.rs: 30/36
 || 
-86.02% coverage, 160/186 lines covered
+81.90% coverage, 190/232 lines covered
 ```
 
 This will create an HTML coverage report at `tarpaulin-report.html` that you can open in your web browser to view detailed line-by-line coverage information for all source files.
@@ -112,7 +116,7 @@ Component | With `default` feature | With `parallel` feature, using rayon-based 
 --- | --- | --- | ---
 Full RLNC Encoder | Throughput of 4.3 GiB/s to 18.6 GiB/s | Throughput of 3.4 GiB/s to 9.7 GiB/s | The number of pieces original data got split into has a **minimal** impact on the encoding speed.
 Full RLNC Recoder | Throughput of 5.2 GiB/s to 17.0 GiB/s | Throughput of 2.9 GiB/s to 7.9 GiB/s | Similar to the encoder, the recoder's performance remains largely consistent regardless of how many pieces the original data is split into.
-Full RLNC Decoder | Throughput of 4 MiB/s to 74 MiB/s, **considerably slower** | **Doesn't yet implement a parallel decoding mode** | As the number of pieces increases, the decoding time increases substantially, leading to a considerable drop in throughput. This indicates that decoding is the most computationally intensive part of the full RLNC scheme, and its performance is inversely proportional to the number of pieces.
+Full RLNC Decoder | Throughput of 67 MiB/s to 1.67 GiB/s | **Doesn't yet implement a parallel decoding mode** | As the number of pieces increases, the decoding time increases substantially, leading to a considerable drop in throughput. This indicates that decoding is the most computationally intensive part of the full RLNC scheme, and its performance is inversely proportional to the number of pieces.
 
 In summary, the full RLNC implementation demonstrates excellent encoding and recoding speeds, consistently achieving GiB/s throughputs with minimal sensitivity to the number of data pieces. The `parallel` feature, leveraging Rust `rayon` data-parallelism framework, also provides good performance for both encoding and recoding. Whether you want to use that feature, completely depends on your usecase. However, decoding remains a much slower operation, with its performance significantly diminishing as the data is split into a greater number of pieces, and currently does **not** implement a parallel decoding algorithm.
 
@@ -816,39 +820,41 @@ full_rlnc_recoder                                                       fastest 
 #### Full RLNC Decoder
 
 ```bash
+# Decoding with AVX2-powered SIMD vector x scalar multiplication
+
 Timer precision: 18 ns
 full_rlnc_decoder                             fastest       │ slowest       │ median        │ mean          │ samples │ iters
 ╰─ decode                                                   │               │               │               │         │
-   ├─ 1.00 MB data splitted into 16 pieces    13.47 ms      │ 17.34 ms      │ 14.13 ms      │ 14.22 ms      │ 100     │ 100
-   │                                          74.24 MiB/s   │ 57.67 MiB/s   │ 70.74 MiB/s   │ 70.31 MiB/s   │         │
-   ├─ 1.00 MB data splitted into 32 pieces    27.63 ms      │ 31.7 ms       │ 28.76 ms      │ 28.87 ms      │ 100     │ 100
-   │                                          36.21 MiB/s   │ 31.57 MiB/s   │ 34.79 MiB/s   │ 34.66 MiB/s   │         │
-   ├─ 1.00 MB data splitted into 64 pieces    56.35 ms      │ 62.67 ms      │ 57.83 ms      │ 58.2 ms       │ 100     │ 100
-   │                                          17.81 MiB/s   │ 16.01 MiB/s   │ 17.35 MiB/s   │ 17.24 MiB/s   │         │
-   ├─ 1.00 MB data splitted into 128 pieces   113.6 ms      │ 123 ms        │ 116.9 ms      │ 117.3 ms      │ 100     │ 100
-   │                                          8.937 MiB/s   │ 8.257 MiB/s   │ 8.683 MiB/s   │ 8.653 MiB/s   │         │
-   ├─ 1.00 MB data splitted into 256 pieces   237.1 ms      │ 250.5 ms      │ 241.9 ms      │ 241.9 ms      │ 100     │ 100
-   │                                          4.482 MiB/s   │ 4.241 MiB/s   │ 4.392 MiB/s   │ 4.392 MiB/s   │         │
-   ├─ 16.00 MB data splitted into 16 pieces   227 ms        │ 235.6 ms      │ 230.5 ms      │ 230.7 ms      │ 100     │ 100
-   │                                          70.45 MiB/s   │ 67.88 MiB/s   │ 69.39 MiB/s   │ 69.34 MiB/s   │         │
-   ├─ 16.00 MB data splitted into 32 pieces   424.6 ms      │ 470.8 ms      │ 449.8 ms      │ 453.7 ms      │ 100     │ 100
-   │                                          37.67 MiB/s   │ 33.98 MiB/s   │ 35.57 MiB/s   │ 35.26 MiB/s   │         │
-   ├─ 16.00 MB data splitted into 64 pieces   884.5 ms      │ 899 ms        │ 894.1 ms      │ 893.1 ms      │ 100     │ 100
-   │                                          18.09 MiB/s   │ 17.79 MiB/s   │ 17.89 MiB/s   │ 17.91 MiB/s   │         │
-   ├─ 16.00 MB data splitted into 128 pieces  1.762 s       │ 1.812 s       │ 1.78 s        │ 1.78 s        │ 57      │ 57
-   │                                          9.086 MiB/s   │ 8.834 MiB/s   │ 8.992 MiB/s   │ 8.993 MiB/s   │         │
-   ├─ 16.00 MB data splitted into 256 pieces  3.553 s       │ 3.673 s       │ 3.611 s       │ 3.602 s       │ 28      │ 28
-   │                                          4.519 MiB/s   │ 4.372 MiB/s   │ 4.447 MiB/s   │ 4.458 MiB/s   │         │
-   ├─ 32.00 MB data splitted into 16 pieces   446.2 ms      │ 458.8 ms      │ 452.9 ms      │ 452.7 ms      │ 100     │ 100
-   │                                          71.7 MiB/s    │ 69.74 MiB/s   │ 70.64 MiB/s   │ 70.67 MiB/s   │         │
-   ├─ 32.00 MB data splitted into 32 pieces   892.4 ms      │ 975.2 ms      │ 906.6 ms      │ 907.7 ms      │ 100     │ 100
-   │                                          35.85 MiB/s   │ 32.81 MiB/s   │ 35.29 MiB/s   │ 35.25 MiB/s   │         │
-   ├─ 32.00 MB data splitted into 64 pieces   1.765 s       │ 1.912 s       │ 1.881 s       │ 1.859 s       │ 54      │ 54
-   │                                          18.12 MiB/s   │ 16.73 MiB/s   │ 17.01 MiB/s   │ 17.21 MiB/s   │         │
-   ├─ 32.00 MB data splitted into 128 pieces  3.563 s       │ 3.755 s       │ 3.727 s       │ 3.698 s       │ 28      │ 28
-   │                                          8.983 MiB/s   │ 8.524 MiB/s   │ 8.589 MiB/s   │ 8.657 MiB/s   │         │
-   ╰─ 32.00 MB data splitted into 256 pieces  7.021 s       │ 7.531 s       │ 7.117 s       │ 7.229 s       │ 14      │ 14
-                                              4.566 MiB/s   │ 4.257 MiB/s   │ 4.504 MiB/s   │ 4.434 MiB/s   │         │
+   ├─ 1.00 MB data splitted into 16 pieces    600 µs        │ 1.041 ms      │ 615.2 µs      │ 622.9 µs      │ 100     │ 100
+   │                                          1.627 GiB/s   │ 960.8 MiB/s   │ 1.587 GiB/s   │ 1.568 GiB/s   │         │
+   ├─ 1.00 MB data splitted into 32 pieces    1.18 ms       │ 1.629 ms      │ 1.201 ms      │ 1.207 ms      │ 100     │ 100
+   │                                          847.6 MiB/s   │ 614.1 MiB/s   │ 833 MiB/s     │ 829.2 MiB/s   │         │
+   ├─ 1.00 MB data splitted into 64 pieces    2.267 ms      │ 2.404 ms      │ 2.299 ms      │ 2.302 ms      │ 100     │ 100
+   │                                          442.7 MiB/s   │ 417.5 MiB/s   │ 436.6 MiB/s   │ 436 MiB/s     │         │
+   ├─ 1.00 MB data splitted into 128 pieces   5.296 ms      │ 5.583 ms      │ 5.333 ms      │ 5.338 ms      │ 100     │ 100
+   │                                          191.7 MiB/s   │ 181.9 MiB/s   │ 190.4 MiB/s   │ 190.2 MiB/s   │         │
+   ├─ 1.00 MB data splitted into 256 pieces   15.27 ms      │ 16.21 ms      │ 15.55 ms      │ 15.55 ms      │ 100     │ 100
+   │                                          69.59 MiB/s   │ 65.54 MiB/s   │ 68.33 MiB/s   │ 68.32 MiB/s   │         │
+   ├─ 16.00 MB data splitted into 16 pieces   16.4 ms       │ 20.56 ms      │ 16.97 ms      │ 17.08 ms      │ 100     │ 100
+   │                                          975.5 MiB/s   │ 778.1 MiB/s   │ 942.4 MiB/s   │ 936.5 MiB/s   │         │
+   ├─ 16.00 MB data splitted into 32 pieces   27.24 ms      │ 30.95 ms      │ 28.12 ms      │ 28.26 ms      │ 100     │ 100
+   │                                          587.3 MiB/s   │ 516.8 MiB/s   │ 568.9 MiB/s   │ 566 MiB/s     │         │
+   ├─ 16.00 MB data splitted into 64 pieces   49.54 ms      │ 62.7 ms       │ 49.74 ms      │ 50.23 ms      │ 100     │ 100
+   │                                          323 MiB/s     │ 255.2 MiB/s   │ 321.6 MiB/s   │ 318.5 MiB/s   │         │
+   ├─ 16.00 MB data splitted into 128 pieces  98.43 ms      │ 102.1 ms      │ 98.98 ms      │ 99.32 ms      │ 100     │ 100
+   │                                          162.6 MiB/s   │ 156.7 MiB/s   │ 161.8 MiB/s   │ 161.2 MiB/s   │         │
+   ├─ 16.00 MB data splitted into 256 pieces  201.8 ms      │ 209.3 ms      │ 202.7 ms      │ 203 ms        │ 100     │ 100
+   │                                          79.58 MiB/s   │ 76.73 MiB/s   │ 79.21 MiB/s   │ 79.11 MiB/s   │         │
+   ├─ 32.00 MB data splitted into 16 pieces   46.33 ms      │ 49.04 ms      │ 46.51 ms      │ 46.7 ms       │ 100     │ 100
+   │                                          690.5 MiB/s   │ 652.4 MiB/s   │ 687.8 MiB/s   │ 685.1 MiB/s   │         │
+   ├─ 32.00 MB data splitted into 32 pieces   78.74 ms      │ 81.78 ms      │ 79.06 ms      │ 79.29 ms      │ 100     │ 100
+   │                                          406.4 MiB/s   │ 391.2 MiB/s   │ 404.7 MiB/s   │ 403.5 MiB/s   │         │
+   ├─ 32.00 MB data splitted into 64 pieces   132.4 ms      │ 137.6 ms      │ 132.9 ms      │ 133.3 ms      │ 100     │ 100
+   │                                          241.5 MiB/s   │ 232.4 MiB/s   │ 240.7 MiB/s   │ 239.9 MiB/s   │         │
+   ├─ 32.00 MB data splitted into 128 pieces  241.9 ms      │ 249.3 ms      │ 243.1 ms      │ 243.6 ms      │ 100     │ 100
+   │                                          132.3 MiB/s   │ 128.4 MiB/s   │ 131.6 MiB/s   │ 131.4 MiB/s   │         │
+   ╰─ 32.00 MB data splitted into 256 pieces  476 ms        │ 485.5 ms      │ 479.1 ms      │ 479.4 ms      │ 100     │ 100
+                                              67.35 MiB/s   │ 66.03 MiB/s   │ 66.9 MiB/s    │ 66.87 MiB/s   │         │
 ```
 
 ## Usage
@@ -857,7 +863,7 @@ To use `rlnc` library crate in your Rust project, add it as a dependency in your
 
 ```toml
 [dependencies]
-rlnc = "=0.7.0"                                      # On x86 target, it offers AVX2 and SSSE3 optimization for fast encoding/ recoding.
+rlnc = "=0.7.0"                                      # On x86 target, it offers AVX2 and SSSE3 optimization for fast encoding, recoding and decoding.
 # or
 rlnc = { version = "=0.7.0", features = "parallel" } # Uses `rayon`-based data-parallelism for fast encoding/ recoding.
 
