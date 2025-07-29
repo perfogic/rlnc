@@ -3,7 +3,7 @@ use crate::RLNCError;
 use rand::Rng;
 
 #[cfg(not(feature = "parallel"))]
-use crate::common::gf256::{gf256_inplace_add_vectors, gf256_mul_vec_by_scalar};
+use crate::common::simd::{gf256_inplace_add_vectors, gf256_mul_vec_by_scalar};
 
 #[cfg(feature = "parallel")]
 use crate::common::gf256::Gf256;
