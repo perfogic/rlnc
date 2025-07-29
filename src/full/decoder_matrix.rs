@@ -282,7 +282,7 @@ impl IndexMut<(usize, usize)> for DecoderMatrix {
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use crate::full::decoder_matrix::DecoderMatrix;
     use rand::Rng;
 
