@@ -31,7 +31,6 @@
 //! ```
 use super::gf256::{GF256_HALF_ORDER, GF256_ORDER, Gf256};
 
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 const fn generate_gf256_simd_mul_table(is_low_part: bool) -> [[u8; 2 * GF256_HALF_ORDER]; GF256_ORDER] {
     let mut table = [[0u8; 2 * GF256_HALF_ORDER]; GF256_ORDER];
 
@@ -68,11 +67,9 @@ const fn generate_gf256_simd_mul_table(is_low_part: bool) -> [[u8; 2 * GF256_HAL
 /// AVX2 and SSSE3 optimized SIMD multiplication over GF(2^8) uses this lookup table, which is generated following
 /// https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1100-L1105.
 /// This table holds `htd->low` part, described in above link.
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub const GF256_SIMD_MUL_TABLE_LOW: [[u8; 2 * GF256_HALF_ORDER]; GF256_ORDER] = generate_gf256_simd_mul_table(true);
 
 /// AVX2 and SSSE3 optimized SIMD multiplication over GF(2^8) uses this lookup table, which is generated following
 /// https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1100-L1105.
 /// This table holds `htd->high` part, described in above link.
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub const GF256_SIMD_MUL_TABLE_HIGH: [[u8; 2 * GF256_HALF_ORDER]; GF256_ORDER] = generate_gf256_simd_mul_table(false);
