@@ -4,7 +4,7 @@ use crate::{
 };
 use std::ops::{Index, IndexMut};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DecoderMatrix {
     num_pieces_coded_together: usize,
     rows: usize,
@@ -275,5 +275,45 @@ impl IndexMut<(usize, usize)> for DecoderMatrix {
         let lin_idx = row_idx * self.cols + col_idx;
 
         unsafe { std::mem::transmute(self.elements.get_unchecked_mut(lin_idx)) }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::full::decoder_matrix::DecoderMatrix;
+    use rand::Rng;
+
+    fn make_random_matrix<R: Rng + ?Sized>(num_rows: usize, num_cols: usize, rng: &mut R) -> DecoderMatrix {
+        let mut matrix = DecoderMatrix::new(num_cols, 0);
+
+        (0..num_rows).for_each(|_| {
+            let random_row = (0..num_cols).map(|_| rng.random()).collect::<Vec<u8>>();
+            matrix.add_row(&random_row).expect("adding new must not fail");
+        });
+
+        matrix
+    }
+
+    #[test]
+    fn prop_test_rref_is_idempotent() {
+        const NUM_TEST_ITERATIONS: usize = 1000;
+
+        const MIN_NUM_ROWS: usize = 1;
+        const MAX_NUM_ROWS: usize = 1000;
+
+        const MIN_NUM_COLS: usize = 1;
+        const MAX_NUM_COLS: usize = 1000;
+
+        let mut rng = rand::rng();
+
+        (0..NUM_TEST_ITERATIONS).for_each(|_| {
+            let num_rows = rng.random_range(MIN_NUM_ROWS..=MAX_NUM_ROWS);
+            let num_cols = rng.random_range(MIN_NUM_COLS..=MAX_NUM_COLS);
+
+            let mut matrix = make_random_matrix(num_rows, num_cols, &mut rng);
+            let rrefed = matrix.rref().clone().rref().to_owned();
+
+            assert_eq!(matrix, rrefed);
+        });
     }
 }
