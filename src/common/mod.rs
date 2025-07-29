@@ -1,3 +1,5 @@
 pub mod errors;
 pub mod gf256;
-pub mod macros;
+pub mod simd;
+
+mod simd_mul_table;

@@ -1,6 +1,9 @@
 use crate::{
     RLNCError,
-    common::gf256::{Gf256, gf256_inplace_mul_vec_by_scalar, gf256_inplace_mul_vec_by_scalar_then_add_into_vec},
+    common::{
+        gf256::Gf256,
+        simd::{gf256_inplace_mul_vec_by_scalar, gf256_inplace_mul_vec_by_scalar_then_add_into_vec},
+    },
 };
 use std::ops::{Index, IndexMut};
 
