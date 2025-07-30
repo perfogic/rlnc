@@ -9,7 +9,7 @@ use crate::{RLNCError, full::decoder_matrix::DecoderMatrix};
 pub struct Decoder {
     /// Stores the coefficient matrix and coded data rows concatenated.
     /// Each row is a coded piece: `[coefficients | data_piece]`.
-    matrix: DecoderMatrix,
+    pub matrix: DecoderMatrix,
     /// The byte length of each original data piece.
     piece_byte_len: usize,
     /// The minimum number of useful coded pieces required to decode.
