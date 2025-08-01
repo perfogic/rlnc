@@ -2,7 +2,7 @@ use crate::{
     RLNCError,
     common::{
         gf256::Gf256,
-        simd::{gf256_inplace_mul_vec_by_scalar, gf256_inplace_mul_vec_by_scalar_then_add_into_vec},
+        simd::{gf256_inplace_mul_vec_by_scalar, gf256_mul_vec_by_scalar_then_add_into_vec},
     },
 };
 use std::ops::{Index, IndexMut};
@@ -155,7 +155,7 @@ impl DecoderMatrix {
                 let i_th_row = &left[(i_th_row_starts_at + i)..];
                 let j_th_row = &mut right[(j_th_row_starts_at - i_th_row_ends_at + i)..(j_th_row_ends_at - i_th_row_ends_at)];
 
-                gf256_inplace_mul_vec_by_scalar_then_add_into_vec(j_th_row, i_th_row, quotient);
+                gf256_mul_vec_by_scalar_then_add_into_vec(j_th_row, i_th_row, quotient);
             }
         }
 
@@ -191,7 +191,7 @@ impl DecoderMatrix {
                 let j_th_row = &mut left[(j_th_row_starts_at + i)..];
                 let i_th_row = &right[(i_th_row_starts_at - j_th_row_ends_at + i)..(i_th_row_ends_at - j_th_row_ends_at)];
 
-                gf256_inplace_mul_vec_by_scalar_then_add_into_vec(j_th_row, i_th_row, quotient);
+                gf256_mul_vec_by_scalar_then_add_into_vec(j_th_row, i_th_row, quotient);
             }
 
             if self[(i, i)] == Gf256::one() {

@@ -3,7 +3,7 @@ use crate::RLNCError;
 use rand::Rng;
 
 #[cfg(not(feature = "parallel"))]
-use crate::common::simd::{gf256_inplace_add_vectors, gf256_mul_vec_by_scalar};
+use crate::common::simd::gf256_mul_vec_by_scalar_then_add_into_vec;
 
 #[cfg(feature = "parallel")]
 use crate::common::gf256::Gf256;
@@ -123,8 +123,7 @@ impl Encoder {
         self.data
             .chunks_exact(self.piece_byte_len)
             .zip(coding_vector)
-            .map(|(piece, &random_symbol)| gf256_mul_vec_by_scalar(piece, random_symbol))
-            .for_each(|cur| gf256_inplace_add_vectors(coded_piece, &cur));
+            .for_each(|(piece, &random_symbol)| gf256_mul_vec_by_scalar_then_add_into_vec(coded_piece, piece, random_symbol));
 
         Ok(full_coded_piece)
     }
