@@ -18,6 +18,15 @@ use super::{
     simd_mul_table::{GF256_SIMD_MUL_TABLE_HIGH, GF256_SIMD_MUL_TABLE_LOW},
 };
 
+/// Given a byte array of arbitrary length, this function can be used to multiply each
+/// byte element with a single specific scalar, over GF(2^8), mutating the input vector.
+///
+/// In case this function runs on `x86_64` with `avx2` or `ssse3` features, it can use
+/// lookup-table assisted SIMD multiplication, inspired from https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1029-L1037.
+///
+/// You have to build with `RUSTFLAGS="-C target-cpu=native"` flag to enjoy full benefits of compiler optimization.
+///
+/// I originally discovered this technique in https://www.snia.org/sites/default/files/files2/files2/SDC2013/presentations/NewThinking/EthanMiller_Screaming_Fast_Galois_Field%20Arithmetic_SIMD%20Instructions.pdf.
 pub fn gf256_inplace_mul_vec_by_scalar(vec: &mut [u8], scalar: u8) {
     if vec.is_empty() {
         return;
@@ -97,24 +106,6 @@ pub fn gf256_inplace_mul_vec_by_scalar(vec: &mut [u8], scalar: u8) {
     });
 }
 
-/// Given a byte array of arbitrary length, this function can be used to multiply each
-/// byte element with a single specific scalar, over GF(2^8), returning resulting vector.
-///
-/// In case this function runs on `x86_64` with `avx2` or `ssse3` features, it can use
-/// lookup-table assisted SIMD multiplication, inspired from https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1029-L1037.
-///
-/// You have to build with `RUSTFLAGS="-C target-cpu=native -C target-feature=+avx2,+ssse3"`flag
-/// to enjoy full benefits of compiler optimization.
-///
-/// I originally discovered this technique in https://www.snia.org/sites/default/files/files2/files2/SDC2013/presentations/NewThinking/EthanMiller_Screaming_Fast_Galois_Field%20Arithmetic_SIMD%20Instructions.pdf.
-#[cfg(not(feature = "parallel"))]
-pub fn gf256_mul_vec_by_scalar(vec: &[u8], scalar: u8) -> Vec<u8> {
-    let mut result = vec.to_vec();
-    gf256_inplace_mul_vec_by_scalar(&mut result, scalar);
-
-    result
-}
-
 /// Given two byte arrays of equal length, this routine performs element-wise
 /// addition over GF(2^8), mutating one of the operand vectors.
 ///
@@ -122,8 +113,8 @@ pub fn gf256_mul_vec_by_scalar(vec: &[u8], scalar: u8) -> Vec<u8> {
 /// runs on `x86_64` with `avx2` or `ssse3` features, it can perform fast SIMD addition
 /// using vector intrinsics.
 ///
-/// You have to compile with `RUSTFLAGS="-C target-cpu=native -C target-feature=+avx2,+ssse3"`
-/// flag to hint the compiler so that it generates best code.
+/// You have to compile with `RUSTFLAGS="-C target-cpu=native` flag to hint the compiler
+/// so that it generates best code.
 pub fn gf256_inplace_add_vectors(vec_dst: &mut [u8], vec_src: &[u8]) {
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     if is_x86_feature_detected!("avx2") {
@@ -180,7 +171,18 @@ pub fn gf256_inplace_add_vectors(vec_dst: &mut [u8], vec_src: &[u8]) {
     });
 }
 
-pub fn gf256_inplace_mul_vec_by_scalar_then_add_into_vec(add_into_vec: &mut [u8], mul_vec: &[u8], scalar: u8) {
+/// Given a byte array `mul_vec` of arbitrary length, this function can be used to multiply each
+/// byte element with a single specific scalar, over GF(2^8), and then adding each scaled value
+/// to corresponding value in sink vector `add_into_vec`.
+///
+/// In case this function runs on `x86_64` with `avx2` or `ssse3` features, it can use
+/// lookup-table assisted SIMD multiplication, inspired from https://github.com/ceph/gf-complete/blob/a6862d10c9db467148f20eef2c6445ac9afd94d8/src/gf_w8.c#L1029-L1037.
+///
+/// You have to build with `RUSTFLAGS="-C target-cpu=native"` flag to enjoy full benefits of compiler optimization.
+///
+/// This function can be thought of an optimization over, first applying `gf256_inplace_mul_vec_by_scalar`
+/// and then applying `gf256_inplace_add_vectors`.
+pub fn gf256_mul_vec_by_scalar_then_add_into_vec(add_into_vec: &mut [u8], mul_vec: &[u8], scalar: u8) {
     if add_into_vec.is_empty() {
         return;
     }
