@@ -102,7 +102,6 @@
 //!
 //! For more see README in `rlnc` repository @ <https://github.com/itzmeanjan/rlnc>.
 
-mod common;
-
+pub mod common;
 pub mod full;
 pub use crate::common::errors::RLNCError;
